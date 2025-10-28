@@ -28,7 +28,16 @@ pub fn run() {
     siv.run();
 }
 
-fn play(s: &mut Cursive) {}
+fn play(s: &mut Cursive) {
+    s.pop_layer();
+    s.add_layer(Dialog::around(
+        LinearLayout::horizontal()
+            .child(DummyView)
+            .child(Button::new("Cancel", |s| {
+                s.pop_layer();
+            })),
+    ));
+}
 
 // TODO: example code
 fn add_name(s: &mut Cursive) {
