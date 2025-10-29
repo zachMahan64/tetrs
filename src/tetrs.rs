@@ -5,33 +5,16 @@ use cursive::traits::*;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout, SelectView};
 pub fn run() {
-    let mut tetrs = Tetrs::new();
-    tetrs.start();
-}
-
-struct Tetrs {
-    siv: CursiveRunnable,
-    // TODO: add a gamefield, leaderboard
-}
-
-impl Tetrs {
-    fn new() -> Self {
-        Self {
-            siv: cursive::default(),
-        }
-    }
-    fn start(&mut self) {
-        // set theme (logic is here for overriding, but this still uses the default retro for now)
-        let mut theme = self.siv.current_theme().clone();
-        theme.palette = cursive::theme::Palette::retro();
-        self.siv.set_theme(theme);
-        // enter title menu
-        show_title_menu(&mut self.siv);
-        // init cursive
-        self.siv.set_fps(60);
-        self.siv.run();
-        log_err!("started cursive");
-    }
+    let mut siv = CursiveRunnable::default();
+    let mut theme = siv.current_theme().clone();
+    theme.palette = cursive::theme::Palette::retro();
+    siv.set_theme(theme);
+    // enter title menu
+    show_title_menu(&mut siv);
+    // init cursive
+    siv.set_fps(60);
+    siv.run();
+    log_err!("started cursive");
 }
 
 fn show_title_menu(s: &mut Cursive) {
@@ -52,8 +35,20 @@ fn show_title_menu(s: &mut Cursive) {
     );
 }
 
+struct Tetrs<'a> {
+    siv: &'a mut Cursive,
+    // TODO: add a gamefield, leaderboard
+}
+
+impl<'a> Tetrs<'a> {
+    fn new(siv: &'a mut Cursive) -> Self {
+        Self { siv: siv }
+    }
+}
+
 fn play(s: &mut Cursive) {
     s.pop_layer();
+    let tetrs = Tetrs::new(s);
     s.add_layer(
         Dialog::around(
             LinearLayout::horizontal()
