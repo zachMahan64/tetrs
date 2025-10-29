@@ -57,7 +57,7 @@ impl<'a> Tetrs<'a> {
 fn play(s: &mut Cursive) {
     s.pop_layer();
     let tetrs = Tetrs::new(s);
-    let temp_view = TextView::new("          ".repeat(20));
+    let temp_view = TextView::new(String::from(" ".repeat(20) + "\n").repeat(40));
     tetrs.siv.add_layer(
         Dialog::around(
             LinearLayout::horizontal()
