@@ -30,7 +30,9 @@ impl Tetrs {
         // enter title menu
         show_title_menu(&mut self.siv);
         // init cursive
+        self.siv.set_fps(60);
         self.siv.run();
+        log_err!("started cursive");
     }
 }
 
