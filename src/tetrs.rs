@@ -1,7 +1,6 @@
 use crate::text_art;
 use cursive::Cursive;
 use cursive::CursiveRunnable;
-use cursive::theme::StyleType;
 use cursive::traits::*;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout, SelectView};
