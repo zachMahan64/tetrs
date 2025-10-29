@@ -1,5 +1,4 @@
-mod tetrs;
-mod text_art;
+use tetrs::tetrs;
 
 fn main() {
     tetrs::run();

@@ -13,7 +13,7 @@ pub fn run() {
 
 struct Tetrs {
     siv: CursiveRunnable,
-    // add a gamefield, leaderboard
+    // TODO: add a gamefield, leaderboard
 }
 
 impl Tetrs {
