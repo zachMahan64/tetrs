@@ -1,44 +1,76 @@
 use cursive::Cursive;
 use cursive::CursiveRunnable;
 use cursive::traits::*;
-use cursive::views::{Button, Dialog, DummyView, EditView, LinearLayout, SelectView};
+use cursive::views::TextView;
+use cursive::views::{Button, Dialog, LinearLayout, SelectView};
+
+use crate::text_art;
 
 pub fn run() {
-    let mut siv: CursiveRunnable = cursive::default();
+    let mut tetrs = Tetrs::new();
+    tetrs.start();
+}
 
-    let select = SelectView::<String>::new()
-        .on_submit(on_submit)
-        .with_name("select")
-        .fixed_size((10, 5));
+struct Tetrs {
+    siv: CursiveRunnable,
+    // add a gamefield, leaderboard
+}
+
+impl Tetrs {
+    fn new() -> Self {
+        Self {
+            siv: cursive::default(),
+        }
+    }
+    fn start(&mut self) {
+        // set theme (logic is here for overriding, but this still uses the default retro for now)
+        let mut theme = self.siv.current_theme().clone();
+        theme.palette = cursive::theme::Palette::retro();
+        self.siv.set_theme(theme);
+        // enter title menu
+        show_title_menu(&mut self.siv);
+        // init cursive
+        self.siv.run();
+    }
+}
+
+fn show_title_menu(s: &mut Cursive) {
+    let select = SelectView::<String>::new().with_name("select");
     let buttons = LinearLayout::vertical()
         .child(Button::new("Play", &play))
-        .child(DummyView)
         .child(Button::new("Quit", &Cursive::quit));
 
-    siv.add_layer(
+    s.add_layer(
         Dialog::around(
-            LinearLayout::horizontal()
+            LinearLayout::vertical()
                 .child(select)
-                .child(DummyView)
+                .child(TextView::new(text_art::TETRS_LOGO_LARGE))
                 .child(buttons),
         )
-        .title("Tetrs"),
+        .title("Tetrs (Rust Edition) | By Zach Mahan"),
     );
-
-    siv.run();
 }
 
 fn play(s: &mut Cursive) {
     s.pop_layer();
-    s.add_layer(Dialog::around(
-        LinearLayout::horizontal()
-            .child(DummyView)
-            .child(Button::new("Cancel", |s| {
-                s.pop_layer();
-            })),
-    ));
+    s.add_layer(
+        Dialog::around(
+            LinearLayout::horizontal()
+                .child(TextView::new("Test  "))
+                .child(Button::new("Cancel", |s| {
+                    s.pop_layer();
+                    show_title_menu(s);
+                })),
+        )
+        .title("Tetrs"),
+    );
+    s.add_global_callback('q', |s| {
+        s.pop_layer();
+        show_title_menu(s);
+    });
 }
 
+/*
 // TODO: example code
 fn add_name(s: &mut Cursive) {
     fn ok(s: &mut Cursive, name: &str) {
@@ -87,3 +119,4 @@ fn on_submit(s: &mut Cursive, name: &str) {
             .button("Quit", Cursive::quit),
     );
 }
+*/
