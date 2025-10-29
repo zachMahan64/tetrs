@@ -1,6 +1,7 @@
 use crate::text_art;
 use cursive::Cursive;
 use cursive::CursiveRunnable;
+use cursive::theme::StyleType;
 use cursive::traits::*;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout, SelectView};
@@ -36,7 +37,8 @@ impl Tetrs {
 
 fn show_title_menu(s: &mut Cursive) {
     let select = SelectView::<String>::new().with_name("select");
-    let title_logo_view = TextView::new(text_art::TETRS_LOGO_LARGE);
+    let mut title_logo_view = TextView::new(text_art::TETRS_LOGO_BLOCK);
+    title_logo_view.set_style(cursive::theme::Color::Rgb(0, 0, 0));
     let buttons = LinearLayout::vertical()
         .child(Button::new("Play", &play))
         .child(Button::new("Quit", &Cursive::quit));
@@ -47,7 +49,7 @@ fn show_title_menu(s: &mut Cursive) {
                 .child(title_logo_view)
                 .child(buttons),
         )
-        .title("Tetrs (Rust Edition) | By Zach Mahan"),
+        .title("Tetrs: Rust Edition, Pun Intented | By Zach Mahan"),
     );
 }
 
