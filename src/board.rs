@@ -2,6 +2,7 @@ use crate::constants;
 use crate::constants::BOARD_HEIGHT;
 use crate::constants::BOARD_WIDTH;
 use cursive::Printer;
+use cursive::XY;
 use cursive::event::Event;
 use cursive::event::EventResult;
 use cursive::theme::Color;
@@ -43,10 +44,11 @@ impl Board {
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
         }
     }
-    fn required_size(&mut self, _constraint: cursive::Vec2) -> cursive::Vec2 {
-        // TODO, impl this?
-    }
-
+    /*
+        fn required_size(&mut self, _constraint: cursive::Vec2) -> cursive::Vec2 {
+            // TODO, impl this?
+        }
+    */
     fn on_event(&mut self, event: Event) -> EventResult {
         // TODO
         //self.handle_event(event, false);
