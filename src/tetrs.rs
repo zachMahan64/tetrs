@@ -1,12 +1,7 @@
-use std::io::Empty;
-
-use crate::constants;
-use crate::constants::BOARD_HEIGHT;
-use crate::constants::BOARD_WIDTH;
+use crate::board::Board;
 use crate::text_art;
 use cursive::Cursive;
 use cursive::CursiveRunnable;
-use cursive::theme::Color;
 use cursive::traits::*;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout, SelectView};
@@ -41,56 +36,32 @@ fn show_title_menu(s: &mut Cursive) {
     );
 }
 
-#[derive(Copy, Clone)]
-enum Block {
-    Red,
-    Green,
-    Blue,
-    Magenta,
-    Yellow,
-    Cyan,
-    Black,
-}
-
-impl Block {
-    fn get_cursive_color(&self) -> cursive::theme::Color {
-        match self {
-            Block::Red => Color::Rgb(255, 0, 0),
-            Block::Green => Color::Rgb(0, 255, 0),
-            Block::Blue => Color::Rgb(0, 0, 255),
-            Block::Magenta => Color::Rgb(255, 0, 255),
-            Block::Yellow => Color::Rgb(255, 255, 0),
-            Block::Cyan => Color::Rgb(0, 255, 255),
-            Block::Black => Color::Rgb(0, 0, 0),
-        }
-    }
-}
-
 struct Tetrs<'a> {
     siv: &'a mut Cursive,
-    board: [[Option<Block>; constants::BOARD_WIDTH]; constants::BOARD_HEIGHT],
-    board_view: TextView,
-    // TODO: add a logical gamefield, leaderboard
+    board: Board,
+    /* TODO, add addtional features:
+     * - leaderboard
+     * - score
+     */
 }
 
 impl<'a> Tetrs<'a> {
     fn new(siv: &'a mut Cursive) -> Self {
         Self {
             siv: siv,
-            board: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
-            board_view: TextView::new("Test  "),
+            board: Board::new(),
         }
     }
-    // TODO: add an update board_view method
 }
 
 fn play(s: &mut Cursive) {
     s.pop_layer();
     let tetrs = Tetrs::new(s);
+    let temp_view = TextView::new("          ".repeat(20));
     tetrs.siv.add_layer(
         Dialog::around(
             LinearLayout::horizontal()
-                .child(tetrs.board_view)
+                .child(temp_view)
                 .child(Button::new("Cancel", |s| {
                     s.pop_layer();
                     show_title_menu(s);
