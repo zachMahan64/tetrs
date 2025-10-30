@@ -32,9 +32,19 @@ pub fn show_title_menu(s: &mut Cursive) {
         .child(TextView::new(text_art::TETRS_T).style(Color::Dark(BaseColor::Green)))
         .child(TextView::new(text_art::TETRS_R).style(Color::Dark(BaseColor::Cyan)))
         .child(TextView::new(text_art::TETRS_S).style(Color::Dark(BaseColor::Magenta)));
+    let settings_button = Button::new("Settings", |s| {
+        s.add_layer(
+            Dialog::around(TextView::new("Sorry, there's nothing to set just yet."))
+                .button("Cancel", |s| {
+                    s.pop_layer();
+                })
+                .title("Settings"),
+        );
+    });
 
     let buttons = LinearLayout::vertical()
         .child(Button::new("Play", &play))
+        .child(settings_button)
         .child(Button::new("Quit", &Cursive::quit));
     let title_view = OnEventView::new(
         Dialog::around(
@@ -75,7 +85,7 @@ fn play(siv: &mut Cursive) {
             .child(action_bubble)
             .child(quit_button),
     );
-    let board = Board::new();
+    let board = Board::new(); // TODO: pass settings here, eventually
     siv.add_layer(
         Dialog::around(
             LinearLayout::horizontal()

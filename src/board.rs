@@ -77,6 +77,17 @@ impl Board {
                     t.set_content("Right!");
                 });
             }),
+            Event::Key(Key::Down) => EventResult::with_cb(|s| {
+                s.call_on_name("action", |t: &mut TextView| {
+                    t.set_content("Down!");
+                });
+            }),
+            Event::Key(Key::Up) => EventResult::with_cb(|s| {
+                s.call_on_name("action", |t: &mut TextView| {
+                    t.set_content("Fast Drop!");
+                });
+            }),
+
             Event::Char('z') => EventResult::with_cb(|s| {
                 s.call_on_name("action", |t: &mut TextView| {
                     t.set_content("Rotated Left!");
@@ -116,6 +127,7 @@ impl View for Board {
     }
 
     fn draw(&self, printer: &Printer) {
+        //TODO: add rendering logic for current piece
         for i in 0..self.tiles.len() {
             for j in 0..self.tiles[i].len() {
                 let tile = self.tiles[i][j];
