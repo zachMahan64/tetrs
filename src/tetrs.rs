@@ -54,7 +54,7 @@ pub fn show_title_menu(s: &mut Cursive) {
                 .child(DummyView::new())
                 .child(buttons),
         )
-        .title("Tetrs: Rust Edition, Pun Intented | By Zach Mahan"),
+        .title("Tetrs / Rust Edition | By Zach Mahan"),
     )
     .on_event(Event::Key(Key::Esc), |s| {
         s.quit();
