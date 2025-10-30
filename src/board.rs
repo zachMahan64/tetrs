@@ -4,10 +4,8 @@ use crate::constants::BOARD_WIDTH;
 use crate::text_art::BLOCK_CHAR;
 use cursive::Printer;
 use cursive::View;
-use cursive::XY;
 use cursive::event::Event;
 use cursive::event::EventResult;
-use cursive::style;
 use cursive::theme::Color;
 
 type Tile = Option<Block>;
@@ -37,21 +35,50 @@ impl Block {
     }
 }
 
+enum ScaleMode {
+    Small,
+    Large,
+}
+
+impl ScaleMode {
+    fn get_scale(&self) -> usize {
+        match self {
+            Self::Small => 1,
+            Self::Large => 2,
+        }
+    }
+    fn default() -> Self {
+        Self::Large
+    }
+}
+
 pub struct Board {
+    scale_mode: ScaleMode,
     tiles: [[Tile; constants::BOARD_WIDTH]; constants::BOARD_HEIGHT],
 }
 
 impl Board {
     pub fn new() -> Self {
         Board {
+            scale_mode: ScaleMode::default(), // make variable eventually
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
         }
     }
-    /*
-        fn required_size(&mut self, _constraint: cursive::Vec2) -> cursive::Vec2 {
-            // TODO, impl this?
+
+    fn for_each_tile<F: FnMut((usize, usize), Tile)>(&self, mut f: F) {
+        for (i, row) in self.tiles.iter().enumerate() {
+            for (j, &tile) in row.iter().enumerate() {
+                f((i, j), tile);
+            }
         }
-    */
+    }
+    // helper
+    fn draw_tile(printer: &Printer, tile: Option<Block>, coord: (usize, usize)) {
+        match tile {
+            Some(block) => printer.with_style(block.get_color(), |p| p.print(coord, BLOCK_CHAR)),
+            None => printer.with_style(Color::Rgb(0, 0, 0), |p| p.print(coord, BLOCK_CHAR)),
+        }
+    }
 }
 
 impl View for Board {
@@ -61,8 +88,8 @@ impl View for Board {
         EventResult::Consumed(None)
     }
     fn required_size(&mut self, _constraint: cursive::Vec2) -> cursive::Vec2 {
-        let board_width_in_chars = BOARD_WIDTH * 2;
-        let board_height_in_chars = BOARD_HEIGHT * 2;
+        let board_width_in_chars = BOARD_WIDTH * 2 * self.scale_mode.get_scale();
+        let board_height_in_chars = BOARD_HEIGHT * self.scale_mode.get_scale();
         (board_width_in_chars, board_height_in_chars).into()
     }
 
@@ -70,24 +97,36 @@ impl View for Board {
         for i in 0..self.tiles.len() {
             for j in 0..self.tiles[i].len() {
                 let tile = self.tiles[i][j];
-                let i = 2 * i;
-                let j = 2 * j;
-                let coords = [(i, j), (i + 1, j), (i, j + 1), (i + 1, j + 1)];
-                for coord in coords {
-                    match tile {
-                        Some(block) => {
-                            printer.with_style(block.get_color(), |p| {
-                                p.print(coord, BLOCK_CHAR);
-                            });
+                let i = self.scale_mode.get_scale() * i;
+                // constant 2 to account for characters inheritantly being narrow
+                let j = self.scale_mode.get_scale() * j * 2;
+                match self.scale_mode {
+                    ScaleMode::Small => {
+                        // 2 chars wide, 1 char tall
+                        for dx in 0..2 {
+                            Board::draw_tile(printer, tile, (j + dx, i));
                         }
-                        None => {
-                            printer.with_style(Color::Rgb(0, 0, 0), |p| {
-                                p.print(coord, BLOCK_CHAR);
-                            });
+                    }
+                    ScaleMode::Large => {
+                        for dx in 0..4 {
+                            // 4 chars wide
+                            for dy in 0..2 {
+                                // 2 chars tall
+                                Board::draw_tile(printer, tile, (j + dx, i + dy));
+                            }
                         }
                     }
                 }
             }
         }
+        printer.with_style(Color::Rgb(255, 0, 0), |p| {
+            p.print(
+                (
+                    self.tiles[0].len() * 2 * self.scale_mode.get_scale() - 1,
+                    self.tiles.len() * self.scale_mode.get_scale() - 1,
+                ),
+                BLOCK_CHAR,
+            );
+        });
     }
 }
