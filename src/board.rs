@@ -96,10 +96,18 @@ impl View for Board {
         //self.handle_event(event, false);
         EventResult::Consumed(None)
     }
-    fn required_size(&mut self, _constraint: cursive::Vec2) -> cursive::Vec2 {
-        let board_width_in_chars = BOARD_WIDTH * 2 * self.scale_mode.get_scale();
-        let board_height_in_chars = BOARD_HEIGHT * self.scale_mode.get_scale();
-        (board_width_in_chars, board_height_in_chars).into()
+    fn required_size(&mut self, constraint: cursive::XY<usize>) -> cursive::XY<usize> {
+        let large_x = BOARD_WIDTH * 2 * ScaleMode::Large.get_scale();
+        let large_y = BOARD_HEIGHT * ScaleMode::Large.get_scale();
+
+        if large_x > constraint.pair().0 || large_y > constraint.pair().1 {
+            self.scale_mode = ScaleMode::Small;
+        } else {
+            self.scale_mode = ScaleMode::Large;
+        }
+        let dimen_x = BOARD_WIDTH * 2 * self.scale_mode.get_scale();
+        let dimen_y = BOARD_HEIGHT * 2 * self.scale_mode.get_scale();
+        (dimen_x, dimen_y).into()
     }
 
     fn draw(&self, printer: &Printer) {
