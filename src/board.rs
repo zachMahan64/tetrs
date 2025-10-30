@@ -8,10 +8,10 @@ use cursive::event::Event;
 use cursive::event::EventResult;
 use cursive::theme::Color;
 
-type Tile = Option<Block>;
+pub type Tile = Option<Block>;
 
 #[derive(Copy, Clone)]
-enum Block {
+pub enum Block {
     Red,
     Green,
     Blue,
@@ -59,10 +59,16 @@ pub struct Board {
 
 impl Board {
     pub fn new() -> Self {
-        Board {
+        let mut board = Board {
             scale_mode: ScaleMode::default(), // make variable eventually
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
-        }
+        };
+        // TODO: test
+        board.tiles[2][4] = Some(Block::Cyan);
+        board.tiles[3][4] = Some(Block::Cyan);
+        board.tiles[3][5] = Some(Block::Cyan);
+        board.tiles[3][6] = Some(Block::Cyan);
+        board
     }
 
     fn for_each_tile<F: FnMut((usize, usize), Tile)>(&self, mut f: F) {
