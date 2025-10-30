@@ -63,6 +63,10 @@ impl Board {
 
     fn handle_event(&self, event: Event) -> EventResult {
         match event {
+            Event::Key(Key::Esc) => EventResult::with_cb(|s| {
+                s.pop_layer();
+                tetrs::show_title_menu(s);
+            }),
             Event::Key(Key::Left) => EventResult::with_cb(|s| {
                 s.call_on_name("action", |t: &mut TextView| {
                     t.set_content("Left!");

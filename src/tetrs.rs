@@ -2,10 +2,12 @@ use crate::board::Board;
 use crate::text_art;
 use cursive::Cursive;
 use cursive::CursiveRunnable;
+use cursive::event::Event;
 use cursive::event::Key;
 use cursive::theme::BaseColor;
 use cursive::traits::*;
 use cursive::views::DummyView;
+use cursive::views::OnEventView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout, SelectView};
@@ -34,7 +36,7 @@ pub fn show_title_menu(s: &mut Cursive) {
     let buttons = LinearLayout::vertical()
         .child(Button::new("Play", &play))
         .child(Button::new("Quit", &Cursive::quit));
-    s.add_layer(
+    let title_view = OnEventView::new(
         Dialog::around(
             LinearLayout::vertical()
                 .child(select)
@@ -43,7 +45,11 @@ pub fn show_title_menu(s: &mut Cursive) {
                 .child(buttons),
         )
         .title("Tetrs: Rust Edition, Pun Intented | By Zach Mahan"),
-    );
+    )
+    .on_event(Event::Key(Key::Esc), |s| {
+        s.quit();
+    });
+    s.add_layer(title_view);
 }
 
 struct Tetrs<'a> {
@@ -76,11 +82,7 @@ fn play(siv: &mut Cursive) {
     let score_label = TextView::new("Score:").center();
     let score = TextView::new("0").with_name("score");
     let action_bubble = TextView::new("...").with_name("action");
-    let side_stack = PaddedView::lrtb(
-        2,
-        2,
-        0,
-        0,
+    let side_stack = Dialog::around(
         LinearLayout::vertical()
             .child(score_label)
             .child(score)
