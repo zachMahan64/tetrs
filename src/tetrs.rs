@@ -52,23 +52,8 @@ pub fn show_title_menu(s: &mut Cursive) {
     s.add_layer(title_view);
 }
 
-struct Tetrs<'a> {
-    siv: &'a mut Cursive,
-    board: Board,
-}
-
-impl<'a> Tetrs<'a> {
-    fn new(siv: &'a mut Cursive) -> Self {
-        Self {
-            siv: siv,
-            board: Board::new(),
-        }
-    }
-}
-
 fn play(siv: &mut Cursive) {
     siv.pop_layer();
-    let tetrs = Tetrs::new(siv);
     let quit_button = PaddedView::lrtb(
         5,
         5,
@@ -90,11 +75,11 @@ fn play(siv: &mut Cursive) {
             .child(action_bubble)
             .child(quit_button),
     );
-
-    tetrs.siv.add_layer(
+    let board = Board::new();
+    siv.add_layer(
         Dialog::around(
             LinearLayout::horizontal()
-                .child(tetrs.board.with_name("board"))
+                .child(board.with_name("board"))
                 .child(DummyView::new())
                 .child(side_stack),
         )
