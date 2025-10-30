@@ -2,7 +2,9 @@ use crate::board::Board;
 use crate::text_art;
 use cursive::Cursive;
 use cursive::CursiveRunnable;
+use cursive::theme::BaseColor;
 use cursive::traits::*;
+use cursive::views::DummyView;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout, SelectView};
 pub fn run() {
@@ -15,13 +17,18 @@ pub fn run() {
     // init cursive
     siv.set_fps(60);
     siv.run();
-    log_err!("started cursive");
 }
 
 fn show_title_menu(s: &mut Cursive) {
     let select = SelectView::<String>::new().with_name("select");
-    let mut title_logo_view = TextView::new(text_art::TETRS_LOGO_BLOCK);
-    title_logo_view.set_style(cursive::theme::Color::Rgb(0, 0, 0));
+    use cursive::theme::Color;
+    let title_logo_view = LinearLayout::horizontal()
+        .child(TextView::new(text_art::TETRS_T).style(Color::Dark(BaseColor::Red)))
+        .child(TextView::new(text_art::TETRS_E).style(Color::Dark(BaseColor::Yellow)))
+        .child(TextView::new(text_art::TETRS_T).style(Color::Dark(BaseColor::Green)))
+        .child(TextView::new(text_art::TETRS_R).style(Color::Dark(BaseColor::Cyan)))
+        .child(TextView::new(text_art::TETRS_S).style(Color::Dark(BaseColor::Magenta)));
+
     let buttons = LinearLayout::vertical()
         .child(Button::new("Play", &play))
         .child(Button::new("Quit", &Cursive::quit));
@@ -30,6 +37,7 @@ fn show_title_menu(s: &mut Cursive) {
             LinearLayout::vertical()
                 .child(select)
                 .child(title_logo_view)
+                .child(DummyView::new())
                 .child(buttons),
         )
         .title("Tetrs: Rust Edition, Pun Intented | By Zach Mahan"),

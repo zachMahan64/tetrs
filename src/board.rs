@@ -6,6 +6,7 @@ use cursive::Printer;
 use cursive::View;
 use cursive::event::Event;
 use cursive::event::EventResult;
+use cursive::theme::BaseColor;
 use cursive::theme::Color;
 
 pub type Tile = Option<Block>;
@@ -24,13 +25,13 @@ pub enum Block {
 impl Block {
     fn get_color(&self) -> cursive::theme::Color {
         match self {
-            Block::Red => Color::Rgb(255, 0, 0),
-            Block::Green => Color::Rgb(0, 255, 0),
-            Block::Blue => Color::Rgb(0, 0, 255),
-            Block::Magenta => Color::Rgb(255, 0, 255),
-            Block::Yellow => Color::Rgb(255, 255, 0),
-            Block::Cyan => Color::Rgb(0, 255, 255),
-            Block::Black => Color::Rgb(0, 0, 0),
+            Block::Red => Color::Dark(cursive::theme::BaseColor::Red),
+            Block::Green => Color::Dark(BaseColor::Green),
+            Block::Blue => Color::Dark(BaseColor::Blue),
+            Block::Magenta => Color::Dark(BaseColor::Magenta),
+            Block::Yellow => Color::Dark(BaseColor::Yellow),
+            Block::Cyan => Color::Dark(BaseColor::Cyan),
+            Block::Black => Color::Dark(BaseColor::Black),
         }
     }
 }
@@ -82,7 +83,9 @@ impl Board {
     fn draw_tile(printer: &Printer, tile: Option<Block>, coord: (usize, usize)) {
         match tile {
             Some(block) => printer.with_style(block.get_color(), |p| p.print(coord, BLOCK_CHAR)),
-            None => printer.with_style(Color::Rgb(0, 0, 0), |p| p.print(coord, BLOCK_CHAR)),
+            None => printer.with_style(Color::Dark(BaseColor::Black), |p| {
+                p.print(coord, BLOCK_CHAR)
+            }),
         }
     }
 }
