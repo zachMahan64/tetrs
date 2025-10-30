@@ -2,9 +2,11 @@ use crate::board::Board;
 use crate::text_art;
 use cursive::Cursive;
 use cursive::CursiveRunnable;
+use cursive::event::Key;
 use cursive::theme::BaseColor;
 use cursive::traits::*;
 use cursive::views::DummyView;
+use cursive::views::PaddedView;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout, SelectView};
 pub fn run() {
@@ -19,7 +21,7 @@ pub fn run() {
     siv.run();
 }
 
-fn show_title_menu(s: &mut Cursive) {
+pub fn show_title_menu(s: &mut Cursive) {
     let select = SelectView::<String>::new().with_name("select");
     use cursive::theme::Color;
     let title_logo_view = LinearLayout::horizontal()
@@ -47,10 +49,6 @@ fn show_title_menu(s: &mut Cursive) {
 struct Tetrs<'a> {
     siv: &'a mut Cursive,
     board: Board,
-    /* TODO, add addtional features:
-     * - leaderboard
-     * - score
-     */
 }
 
 impl<'a> Tetrs<'a> {
@@ -65,71 +63,40 @@ impl<'a> Tetrs<'a> {
 fn play(siv: &mut Cursive) {
     siv.pop_layer();
     let tetrs = Tetrs::new(siv);
-    let temp_view = TextView::new(String::from(" ".repeat(20) + "\n").repeat(40));
+    let quit_button = PaddedView::lrtb(
+        5,
+        5,
+        10,
+        0,
+        Button::new("Quit", |s| {
+            s.pop_layer();
+            show_title_menu(s);
+        }),
+    );
+    let score_label = TextView::new("Score:").center();
+    let score = TextView::new("0").with_name("score");
+    let action_bubble = TextView::new("...").with_name("action");
+    let side_stack = PaddedView::lrtb(
+        2,
+        2,
+        0,
+        0,
+        LinearLayout::vertical()
+            .child(score_label)
+            .child(score)
+            .child(DummyView::new())
+            .child(action_bubble)
+            .child(quit_button),
+    );
+
     tetrs.siv.add_layer(
         Dialog::around(
-            LinearLayout::vertical()
-                .child(tetrs.board)
-                .child(Button::new("Cancel", |s| {
-                    s.pop_layer();
-                    show_title_menu(s);
-                })),
+            LinearLayout::horizontal()
+                .child(tetrs.board.with_name("board"))
+                .child(DummyView::new())
+                .child(side_stack),
         )
         .title("Tetrs"),
     );
-    siv.add_global_callback('q', |s| {
-        s.pop_layer();
-        show_title_menu(s);
-    });
+    // tetrs.siv.focus_name("board").unwrap();
 }
-
-/*
-// TODO: example code
-fn add_name(s: &mut Cursive) {
-    fn ok(s: &mut Cursive, name: &str) {
-        s.call_on_name("select", |view: &mut SelectView<String>| {
-            view.add_item_str(name)
-        });
-        s.pop_layer();
-    }
-
-    s.add_layer(
-        Dialog::around(
-            EditView::new()
-                .on_submit(ok)
-                .with_name("name")
-                .fixed_width(10),
-        )
-        .title("Enter a new name")
-        .button("Ok", |s| {
-            let name = s
-                .call_on_name("name", |view: &mut EditView| view.get_content())
-                .unwrap();
-            ok(s, &name);
-        })
-        .button("Cancel", |s| {
-            s.pop_layer();
-        }),
-    );
-}
-
-// TODO: example code
-fn delete_name(s: &mut Cursive) {
-    let mut select = s.find_name::<SelectView<String>>("select").unwrap();
-    match select.selected_id() {
-        None => s.add_layer(Dialog::info("No name to remove")),
-        Some(focus) => {
-            select.remove_item(focus);
-        }
-    }
-}
-
-fn on_submit(s: &mut Cursive, name: &str) {
-    s.pop_layer();
-    s.add_layer(
-        Dialog::text(format!("Name: {}\nAwesome: yes", name))
-            .title(format!("{}'s info", name))
-            .button("Quit", Cursive::quit),
-    );
-}
-*/

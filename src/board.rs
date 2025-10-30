@@ -1,41 +1,20 @@
 use crate::constants;
 use crate::constants::BOARD_HEIGHT;
 use crate::constants::BOARD_WIDTH;
+use crate::tetrs;
 use crate::text_art::BLOCK_CHAR;
+use crate::tile::Block;
+use crate::tile::Tile;
 use cursive::Printer;
 use cursive::View;
+use cursive::direction::Direction;
 use cursive::event::Event;
 use cursive::event::EventResult;
+use cursive::event::Key;
 use cursive::theme::BaseColor;
 use cursive::theme::Color;
-
-pub type Tile = Option<Block>;
-
-#[derive(Copy, Clone)]
-pub enum Block {
-    Red,
-    Green,
-    Blue,
-    Magenta,
-    Yellow,
-    Cyan,
-    Black,
-}
-
-impl Block {
-    fn get_color(&self) -> cursive::theme::Color {
-        match self {
-            Block::Red => Color::Dark(cursive::theme::BaseColor::Red),
-            Block::Green => Color::Dark(BaseColor::Green),
-            Block::Blue => Color::Dark(BaseColor::Blue),
-            Block::Magenta => Color::Dark(BaseColor::Magenta),
-            Block::Yellow => Color::Dark(BaseColor::Yellow),
-            Block::Cyan => Color::Dark(BaseColor::Cyan),
-            Block::Black => Color::Dark(BaseColor::Black),
-        }
-    }
-}
-
+use cursive::view::CannotFocus;
+use cursive::views::TextView;
 enum ScaleMode {
     Small,
     Large,
@@ -72,13 +51,6 @@ impl Board {
         board
     }
 
-    fn for_each_tile<F: FnMut((usize, usize), Tile)>(&self, mut f: F) {
-        for (i, row) in self.tiles.iter().enumerate() {
-            for (j, &tile) in row.iter().enumerate() {
-                f((i, j), tile);
-            }
-        }
-    }
     // helper
     fn draw_tile(printer: &Printer, tile: Option<Block>, coord: (usize, usize)) {
         match tile {
@@ -88,14 +60,42 @@ impl Board {
             }),
         }
     }
+
+    fn handle_event(&self, event: Event) -> EventResult {
+        match event {
+            Event::Key(Key::Left) => EventResult::with_cb(|s| {
+                s.call_on_name("action", |t: &mut TextView| {
+                    t.set_content("Left!");
+                });
+            }),
+            Event::Key(Key::Right) => EventResult::with_cb(|s| {
+                s.call_on_name("action", |t: &mut TextView| {
+                    t.set_content("Right!");
+                });
+            }),
+            Event::Char('z') => EventResult::with_cb(|s| {
+                s.call_on_name("action", |t: &mut TextView| {
+                    t.set_content("Rotated Left!");
+                });
+            }),
+            Event::Char('x') => EventResult::with_cb(|s| {
+                s.call_on_name("action", |t: &mut TextView| {
+                    t.set_content("Rotated Right!");
+                });
+            }),
+            _ => EventResult::Ignored,
+        }
+    }
 }
 
 impl View for Board {
     fn on_event(&mut self, event: Event) -> EventResult {
-        // TODO
-        //self.handle_event(event, false);
-        EventResult::Consumed(None)
+        self.handle_event(event)
     }
+    fn take_focus(&mut self, _: Direction) -> Result<EventResult, CannotFocus> {
+        Ok(EventResult::Consumed(None))
+    }
+
     fn required_size(&mut self, constraint: cursive::XY<usize>) -> cursive::XY<usize> {
         let large_x = BOARD_WIDTH * 2 * ScaleMode::Large.get_scale();
         let large_y = BOARD_HEIGHT * ScaleMode::Large.get_scale();
@@ -105,8 +105,9 @@ impl View for Board {
         } else {
             self.scale_mode = ScaleMode::Large;
         }
+
         let dimen_x = BOARD_WIDTH * 2 * self.scale_mode.get_scale();
-        let dimen_y = BOARD_HEIGHT * 2 * self.scale_mode.get_scale();
+        let dimen_y = BOARD_HEIGHT * self.scale_mode.get_scale();
         (dimen_x, dimen_y).into()
     }
 
@@ -136,7 +137,8 @@ impl View for Board {
                 }
             }
         }
-        printer.with_style(Color::Rgb(255, 0, 0), |p| {
+        // TODO: test print red rect at bottom right corner
+        printer.with_style(Color::Dark(BaseColor::Red), |p| {
             p.print(
                 (
                     self.tiles[0].len() * 2 * self.scale_mode.get_scale() - 1,
