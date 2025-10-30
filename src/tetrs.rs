@@ -54,14 +54,14 @@ impl<'a> Tetrs<'a> {
     }
 }
 
-fn play(s: &mut Cursive) {
-    s.pop_layer();
-    let tetrs = Tetrs::new(s);
+fn play(siv: &mut Cursive) {
+    siv.pop_layer();
+    let tetrs = Tetrs::new(siv);
     let temp_view = TextView::new(String::from(" ".repeat(20) + "\n").repeat(40));
     tetrs.siv.add_layer(
         Dialog::around(
-            LinearLayout::horizontal()
-                .child(temp_view)
+            LinearLayout::vertical()
+                .child(tetrs.board)
                 .child(Button::new("Cancel", |s| {
                     s.pop_layer();
                     show_title_menu(s);
@@ -69,7 +69,7 @@ fn play(s: &mut Cursive) {
         )
         .title("Tetrs"),
     );
-    s.add_global_callback('q', |s| {
+    siv.add_global_callback('q', |s| {
         s.pop_layer();
         show_title_menu(s);
     });

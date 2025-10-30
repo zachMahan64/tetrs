@@ -66,4 +66,4 @@ pub static TETRS_LOGO_FANCY_LARGE: &str = r#"
 ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⡿⢷⣶⣶⣶⣶⣶⣤⣤⣤⣤⣤⣤⣄⡄⠀⠸⠿⢿⡿⠿⢿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⣿⣿⣿⣿⣿⡿⣿⢿⣿⣿⡿⡿
 "#;
 
-pub static B: &str = "█";
+pub static BLOCK_CHAR: &str = "█";
