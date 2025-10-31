@@ -18,7 +18,7 @@ impl PieceType {
             PieceType::I => Block::Cyan,
             PieceType::O => Block::Yellow,
             PieceType::J => Block::Blue,
-            PieceType::L => Block::White, // maybe change
+            PieceType::L => Block::Orange,
             PieceType::S => Block::Green,
             PieceType::Z => Block::Red,
             PieceType::T => Block::Magenta,

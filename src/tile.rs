@@ -13,12 +13,13 @@ pub enum Block {
     Cyan,
     Black,
     White,
+    Orange,
 }
 
 impl Block {
     pub fn get_color(&self) -> cursive::theme::Color {
         match self {
-            Block::Red => Color::Dark(cursive::theme::BaseColor::Red),
+            Block::Red => Color::Dark(BaseColor::Red),
             Block::Green => Color::Dark(BaseColor::Green),
             Block::Blue => Color::Dark(BaseColor::Blue),
             Block::Magenta => Color::Dark(BaseColor::Magenta),
@@ -26,6 +27,7 @@ impl Block {
             Block::Cyan => Color::Dark(BaseColor::Cyan),
             Block::Black => Color::Dark(BaseColor::Black),
             Block::White => Color::Dark(BaseColor::White),
+            Block::Orange => Color::RgbLowRes(5, 3, 0),
         }
     }
 }
