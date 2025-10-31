@@ -66,7 +66,7 @@ pub fn show_title_menu(s: &mut Cursive) {
 fn play(siv: &mut Cursive) {
     siv.pop_layer();
     // widest element as a DummyView with padding
-    let width_padding = PaddedView::lrtb(6, 6, 10, 0, DummyView).with_name("padded");
+    let width_padding = PaddedView::lrtb(8, 8, 10, 0, DummyView).with_name("padded");
     let high_score_label = TextView::new("High Score")
         .center()
         .style(Effect::Underline);
@@ -114,21 +114,26 @@ fn get_pause_button() -> Button {
 }
 fn pause_menu_popup(s: &mut Cursive) {
     s.add_layer(
-        Dialog::around(
-            LinearLayout::vertical()
-                .child(Button::new("Resume", |s| {
-                    s.pop_layer();
-                }))
-                .child(Button::new("Controls", |s| {
-                    controls_menu_popup(s);
-                }))
-                .child(Button::new("Return to Title", |s| {
-                    s.pop_layer();
-                    s.pop_layer();
-                    show_title_menu(s);
-                })),
+        OnEventView::new(
+            Dialog::around(
+                LinearLayout::vertical()
+                    .child(Button::new("Resume", |s| {
+                        s.pop_layer();
+                    }))
+                    .child(Button::new("Controls", |s| {
+                        controls_menu_popup(s);
+                    }))
+                    .child(Button::new("Return to Title", |s| {
+                        s.pop_layer();
+                        s.pop_layer();
+                        show_title_menu(s);
+                    })),
+            )
+            .title("Pause Menu"),
         )
-        .title("Pause Menu"),
+        .on_event(Event::Key(Key::Esc), |s| {
+            s.pop_layer();
+        }),
     );
 }
 fn controls_menu_popup(s: &mut Cursive) {
