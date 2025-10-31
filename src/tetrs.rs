@@ -46,7 +46,7 @@ pub fn show_title_menu(s: &mut Cursive) {
     let buttons = LinearLayout::vertical()
         .child(Button::new("Play", &play))
         .child(settings_button)
-        .child(quit_button());
+        .child(get_quit_button());
     let title_view = OnEventView::new(
         Dialog::around(
             LinearLayout::vertical()
@@ -65,7 +65,8 @@ pub fn show_title_menu(s: &mut Cursive) {
 
 fn play(siv: &mut Cursive) {
     siv.pop_layer();
-    let pause_button = PaddedView::lrtb(5, 5, 10, 0, pause_button());
+    // widest element as a DummyView with padding
+    let width_padding = PaddedView::lrtb(6, 6, 10, 0, DummyView).with_name("padded");
     let high_score_label = TextView::new("High Score")
         .center()
         .style(Effect::Underline);
@@ -79,13 +80,14 @@ fn play(siv: &mut Cursive) {
             .child(score_label)
             .child(score),
     );
-    let action_bubble = TextView::new("...").with_name("action");
+    let action_bubble = Dialog::around(TextView::new("...").with_name("action"));
     let side_stack = Dialog::around(
         LinearLayout::vertical()
             .child(score_view)
             .child(DummyView::new())
             .child(action_bubble)
-            .child(pause_button),
+            .child(width_padding)
+            .child(Dialog::around(get_pause_button())),
     );
     let board = Board::new(); // TODO: pass settings here, eventually
     siv.add_layer(
@@ -102,11 +104,10 @@ fn play(siv: &mut Cursive) {
             pause_menu(s);
         }),
     );
-    // tetrs.siv.focus_name("board").unwrap();
 }
 
 // helprs
-fn pause_button() -> Button {
+fn get_pause_button() -> Button {
     Button::new("Pause", |s| {
         pause_menu(s);
     })
@@ -118,6 +119,9 @@ fn pause_menu(s: &mut Cursive) {
                 .child(Button::new("Resume", |s| {
                     s.pop_layer();
                 }))
+                .child(Button::new("Controls", |s| {
+                    controls_menu(s);
+                }))
                 .child(Button::new("Return to Title", |s| {
                     s.pop_layer();
                     s.pop_layer();
@@ -127,7 +131,25 @@ fn pause_menu(s: &mut Cursive) {
         .title("Pause Menu"),
     );
 }
-fn quit_button() -> Button {
+fn controls_menu(s: &mut Cursive) {
+    s.add_layer(
+        Dialog::around(TextView::new(
+            r#"
+  <- / ->  | move piece left / right 
+ up arrow  | instantly drop piece 
+down arrow | fast fall piece
+     Z     | rotate piece left 
+     X     | rotate piece right 
+[spacebar] | hold
+"#,
+        ))
+        .button("Cancel", |s| {
+            s.pop_layer();
+        })
+        .title("Controls"),
+    );
+}
+fn get_quit_button() -> Button {
     Button::new("Quit", |s| {
         s.add_layer(
             Dialog::around(TextView::new("Are you sure you want to quit?"))

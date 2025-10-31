@@ -1,7 +1,6 @@
 use crate::constants;
 use crate::constants::BOARD_HEIGHT;
 use crate::constants::BOARD_WIDTH;
-use crate::tetrs;
 use crate::text_art::BLOCK_CHAR;
 use crate::tile::Block;
 use crate::tile::Tile;
@@ -14,7 +13,12 @@ use cursive::event::Key;
 use cursive::theme::BaseColor;
 use cursive::theme::Color;
 use cursive::view::CannotFocus;
+use cursive::view::Margins;
+use cursive::views::DummyView;
+use cursive::views::PaddedView;
 use cursive::views::TextView;
+
+#[derive(PartialEq, Clone, Copy)]
 enum ScaleMode {
     Small,
     Large,
@@ -35,6 +39,7 @@ impl ScaleMode {
 pub struct Board {
     scale_mode: ScaleMode,
     tiles: [[Tile; constants::BOARD_WIDTH]; constants::BOARD_HEIGHT],
+    needs_relayout: bool,
 }
 
 impl Board {
@@ -42,6 +47,7 @@ impl Board {
         let mut board = Board {
             scale_mode: ScaleMode::default(), // make variable eventually
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
+            needs_relayout: false,
         };
         // TODO: test
         board.tiles[2][4] = Some(Block::Cyan);
@@ -61,8 +67,9 @@ impl Board {
         }
     }
 
-    fn handle_event(&self, event: Event) -> EventResult {
+    fn handle_event(&mut self, event: Event) -> EventResult {
         match event {
+            Event::Refresh => self.handle_refresh(),
             Event::Key(Key::Left) => EventResult::with_cb(|s| {
                 s.call_on_name("action", |t: &mut TextView| {
                     t.set_content("Left!");
@@ -97,6 +104,21 @@ impl Board {
             _ => EventResult::Ignored,
         }
     }
+    fn handle_refresh(&mut self) -> EventResult {
+        if !self.needs_relayout {
+            return EventResult::Ignored;
+        }
+        self.needs_relayout = false; //reset
+        let margins: Margins = match self.scale_mode {
+            ScaleMode::Small => Margins::lrtb(6, 6, 0, 0),
+            ScaleMode::Large => Margins::lrtb(6, 6, 10, 0),
+        };
+        EventResult::with_cb(move |s| {
+            s.call_on_name("padded", |t: &mut PaddedView<DummyView>| {
+                t.set_margins(margins);
+            });
+        })
+    }
 }
 
 impl View for Board {
@@ -108,6 +130,7 @@ impl View for Board {
     }
 
     fn required_size(&mut self, constraint: cursive::XY<usize>) -> cursive::XY<usize> {
+        let starting_scale = self.scale_mode.clone();
         let large_x = BOARD_WIDTH * 2 * ScaleMode::Large.get_scale();
         let large_y = BOARD_HEIGHT * ScaleMode::Large.get_scale();
 
@@ -115,6 +138,11 @@ impl View for Board {
             self.scale_mode = ScaleMode::Small;
         } else {
             self.scale_mode = ScaleMode::Large;
+        }
+        let updated_scale = self.scale_mode.clone();
+
+        if starting_scale != updated_scale {
+            self.needs_relayout = true;
         }
 
         let dimen_x = BOARD_WIDTH * 2 * self.scale_mode.get_scale();
