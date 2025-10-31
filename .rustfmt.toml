@@ -1,0 +1,4 @@
+array_layout = "Vertical"
+array_width = 30
+trailing_comma = "Always"
+indent_style = "Block"

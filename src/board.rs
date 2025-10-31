@@ -1,6 +1,3 @@
-use crate::constants;
-use crate::constants::BOARD_HEIGHT;
-use crate::constants::BOARD_WIDTH;
 use crate::text_art::BLOCK_CHAR;
 use crate::tile::Block;
 use crate::tile::Tile;
@@ -17,6 +14,9 @@ use cursive::view::Margins;
 use cursive::views::DummyView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
+
+static BOARD_WIDTH: usize = 10;
+static BOARD_HEIGHT: usize = 20;
 
 #[derive(PartialEq, Clone, Copy)]
 enum ScaleMode {
@@ -37,9 +37,11 @@ impl ScaleMode {
 }
 
 pub struct Board {
+    // board layout things
     scale_mode: ScaleMode,
-    tiles: [[Tile; constants::BOARD_WIDTH]; constants::BOARD_HEIGHT],
+    tiles: [[Tile; BOARD_WIDTH]; BOARD_HEIGHT],
     needs_relayout: bool,
+    // current piece things
 }
 
 impl Board {

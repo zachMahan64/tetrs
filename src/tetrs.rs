@@ -101,7 +101,7 @@ fn play(siv: &mut Cursive) {
             .title("Tetrs"),
         )
         .on_event(Event::Key(Key::Esc), |s| {
-            pause_menu(s);
+            pause_menu_popup(s);
         }),
     );
 }
@@ -109,10 +109,10 @@ fn play(siv: &mut Cursive) {
 // helprs
 fn get_pause_button() -> Button {
     Button::new("Pause", |s| {
-        pause_menu(s);
+        pause_menu_popup(s);
     })
 }
-fn pause_menu(s: &mut Cursive) {
+fn pause_menu_popup(s: &mut Cursive) {
     s.add_layer(
         Dialog::around(
             LinearLayout::vertical()
@@ -120,7 +120,7 @@ fn pause_menu(s: &mut Cursive) {
                     s.pop_layer();
                 }))
                 .child(Button::new("Controls", |s| {
-                    controls_menu(s);
+                    controls_menu_popup(s);
                 }))
                 .child(Button::new("Return to Title", |s| {
                     s.pop_layer();
@@ -131,7 +131,7 @@ fn pause_menu(s: &mut Cursive) {
         .title("Pause Menu"),
     );
 }
-fn controls_menu(s: &mut Cursive) {
+fn controls_menu_popup(s: &mut Cursive) {
     s.add_layer(
         Dialog::around(TextView::new(
             r#"

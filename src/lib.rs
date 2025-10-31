@@ -1,7 +1,6 @@
 #[macro_use]
 pub mod log;
 pub mod board;
-mod constants;
 pub mod piece;
 pub mod tetrs;
 mod text_art;
