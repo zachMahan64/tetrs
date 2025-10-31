@@ -34,6 +34,12 @@ impl ScaleMode {
     fn default() -> Self {
         Self::Large
     }
+    fn get_side_stack_margins(&self) -> Margins {
+        match self {
+            Self::Small => Margins::lrtb(8, 9, 0, 0),
+            ScaleMode::Large => Margins::lrtb(8, 9, 10, 0),
+        }
+    }
 }
 
 pub struct Board {
@@ -111,11 +117,8 @@ impl Board {
         if !self.needs_relayout {
             return EventResult::Ignored;
         }
-        self.needs_relayout = false; //reset
-        let margins: Margins = match self.scale_mode {
-            ScaleMode::Small => Margins::lrtb(6, 6, 0, 0),
-            ScaleMode::Large => Margins::lrtb(6, 6, 10, 0),
-        };
+        self.needs_relayout = false; //reset 
+        let margins = self.scale_mode.get_side_stack_margins();
         EventResult::with_cb(move |s| {
             s.call_on_name("padded", |t: &mut PaddedView<DummyView>| {
                 t.set_margins(margins);
