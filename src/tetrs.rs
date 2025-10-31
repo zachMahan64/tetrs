@@ -5,6 +5,7 @@ use cursive::CursiveRunnable;
 use cursive::event::Event;
 use cursive::event::Key;
 use cursive::theme::BaseColor;
+use cursive::theme::Effect;
 use cursive::traits::*;
 use cursive::views::DummyView;
 use cursive::views::OnEventView;
@@ -45,7 +46,7 @@ pub fn show_title_menu(s: &mut Cursive) {
     let buttons = LinearLayout::vertical()
         .child(Button::new("Play", &play))
         .child(settings_button)
-        .child(Button::new("Quit", &Cursive::quit));
+        .child(quit_button());
     let title_view = OnEventView::new(
         Dialog::around(
             LinearLayout::vertical()
@@ -64,36 +65,79 @@ pub fn show_title_menu(s: &mut Cursive) {
 
 fn play(siv: &mut Cursive) {
     siv.pop_layer();
-    let quit_button = PaddedView::lrtb(
-        5,
-        5,
-        10,
-        0,
-        Button::new("Quit", |s| {
-            s.pop_layer();
-            show_title_menu(s);
-        }),
+    let pause_button = PaddedView::lrtb(5, 5, 10, 0, pause_button());
+    let high_score_label = TextView::new("High Score")
+        .center()
+        .style(Effect::Underline);
+    let high_score = TextView::new("1000").center().with_name("highscore"); // TODO add logic
+    let score_label = TextView::new("Score").center().style(Effect::Underline);
+    let score = TextView::new("0").center().with_name("score"); // TODO add logic
+    let score_view = Dialog::around(
+        LinearLayout::vertical()
+            .child(high_score_label)
+            .child(high_score)
+            .child(score_label)
+            .child(score),
     );
-    let score_label = TextView::new("Score:").center();
-    let score = TextView::new("0").with_name("score");
     let action_bubble = TextView::new("...").with_name("action");
     let side_stack = Dialog::around(
         LinearLayout::vertical()
-            .child(score_label)
-            .child(score)
+            .child(score_view)
             .child(DummyView::new())
             .child(action_bubble)
-            .child(quit_button),
+            .child(pause_button),
     );
     let board = Board::new(); // TODO: pass settings here, eventually
     siv.add_layer(
-        Dialog::around(
-            LinearLayout::horizontal()
-                .child(board.with_name("board"))
-                .child(DummyView::new())
-                .child(side_stack),
+        OnEventView::new(
+            Dialog::around(
+                LinearLayout::horizontal()
+                    .child(board.with_name("board"))
+                    .child(DummyView::new())
+                    .child(side_stack),
+            )
+            .title("Tetrs"),
         )
-        .title("Tetrs"),
+        .on_event(Event::Key(Key::Esc), |s| {
+            pause_menu(s);
+        }),
     );
     // tetrs.siv.focus_name("board").unwrap();
+}
+
+// helprs
+fn pause_button() -> Button {
+    Button::new("Pause", |s| {
+        pause_menu(s);
+    })
+}
+fn pause_menu(s: &mut Cursive) {
+    s.add_layer(
+        Dialog::around(
+            LinearLayout::vertical()
+                .child(Button::new("Resume", |s| {
+                    s.pop_layer();
+                }))
+                .child(Button::new("Return to Title", |s| {
+                    s.pop_layer();
+                    s.pop_layer();
+                    show_title_menu(s);
+                })),
+        )
+        .title("Pause Menu"),
+    );
+}
+fn quit_button() -> Button {
+    Button::new("Quit", |s| {
+        s.add_layer(
+            Dialog::around(TextView::new("Are you sure you want to quit?"))
+                .button("Yes", |s| {
+                    s.quit();
+                })
+                .button("No", |s| {
+                    s.pop_layer();
+                })
+                .title("Confirm Quit"),
+        );
+    })
 }
