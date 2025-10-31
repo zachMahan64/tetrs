@@ -10,6 +10,8 @@ enum PieceType {
     T,
 }
 
+const LAYOUT_LEN: usize = 4;
+
 impl PieceType {
     fn get_colored_block(&self) -> Block {
         match self {
@@ -30,8 +32,8 @@ impl PieceType {
             _ => 3,
         }
     }
-    fn get_layout(&self) -> [[Tile; 4]; 4] {
-        type Lay = [[u8; 4]; 4];
+    fn get_layout(&self) -> [[Tile; LAYOUT_LEN]; LAYOUT_LEN] {
+        type Lay = [[u8; LAYOUT_LEN]; LAYOUT_LEN];
 
         static I_LAYOUT: Lay = [
             [0, 0, 0, 0],
@@ -88,10 +90,13 @@ impl PieceType {
 
         self.to_tilemap(bitmap_layout)
     }
-    fn to_tilemap(&self, bitmap: [[u8; 4]; 4]) -> [[Tile; 4]; 4] {
-        let mut layout: [[Tile; 4]; 4] = [[None; 4]; 4];
-        for i in 0..4 {
-            for j in 0..4 {
+    fn to_tilemap(
+        &self,
+        bitmap: [[u8; LAYOUT_LEN]; LAYOUT_LEN],
+    ) -> [[Tile; LAYOUT_LEN]; LAYOUT_LEN] {
+        let mut layout: [[Tile; LAYOUT_LEN]; LAYOUT_LEN] = [[None; LAYOUT_LEN]; LAYOUT_LEN];
+        for i in 0..LAYOUT_LEN {
+            for j in 0..LAYOUT_LEN {
                 if bitmap[i][j] == 1 {
                     layout[i][j] = Some(self.get_colored_block());
                 }
@@ -103,7 +108,7 @@ impl PieceType {
 
 struct Piece {
     piece_type: PieceType,
-    layout: [[Tile; 4]; 4],
+    layout: [[Tile; LAYOUT_LEN]; LAYOUT_LEN],
     // of top left, signed so piece itself can go to edge even when top left of 4x4 layout is at
     // some 0 coord
     coord: (i8, i8),
