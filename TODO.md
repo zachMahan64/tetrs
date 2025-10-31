@@ -4,10 +4,11 @@
 - Piece rendering, board.draw needs to render current piece too, not just the static board 
 - Line clearing
 - Score/non-persistent highscore w/ names
+- Advanced stats (live) -> inputs per second (average overall and last ~3 seconds)
 - Difficulty (levels 1-10, maybe more?)
 - Music w/ rodio (toggle-able)
 #### Extra
-- Persisent highscore (file, decide where)
+- Persisent highscore (file, decide where) and advanced stats?
 - Holding (toggle-able)
 - VFX (like cool graphic on a tetrs)
 - SFX (like satisfying sounds on line clears/tetrs)

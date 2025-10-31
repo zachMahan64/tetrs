@@ -74,22 +74,22 @@ impl Board {
             Event::Refresh => self.handle_refresh(),
             Event::Key(Key::Left) => EventResult::with_cb(|s| {
                 s.call_on_name("action", |t: &mut TextView| {
-                    t.set_content("Left!");
+                    t.set_content("Moved Left!");
                 });
             }),
             Event::Key(Key::Right) => EventResult::with_cb(|s| {
                 s.call_on_name("action", |t: &mut TextView| {
-                    t.set_content("Right!");
+                    t.set_content("Moved Right!");
                 });
             }),
             Event::Key(Key::Down) => EventResult::with_cb(|s| {
                 s.call_on_name("action", |t: &mut TextView| {
-                    t.set_content("Down!");
+                    t.set_content("Moved Down!");
                 });
             }),
             Event::Key(Key::Up) => EventResult::with_cb(|s| {
                 s.call_on_name("action", |t: &mut TextView| {
-                    t.set_content("Fast Drop!");
+                    t.set_content("Fast Dropped!");
                 });
             }),
 
@@ -106,6 +106,7 @@ impl Board {
             _ => EventResult::Ignored,
         }
     }
+    // handle refresh logic, like what to do relayout is needed
     fn handle_refresh(&mut self) -> EventResult {
         if !self.needs_relayout {
             return EventResult::Ignored;

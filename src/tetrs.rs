@@ -65,8 +65,8 @@ pub fn show_title_menu(s: &mut Cursive) {
 
 fn play(siv: &mut Cursive) {
     siv.pop_layer();
-    // widest element as a DummyView with padding
-    let width_padding = PaddedView::lrtb(8, 8, 10, 0, DummyView).with_name("padded");
+    // widest element as a DummyView with padding,
+    let width_padding = PaddedView::lrtb(8, 9, 10, 0, DummyView).with_name("padded");
     let high_score_label = TextView::new("High Score")
         .center()
         .style(Effect::Underline);
@@ -80,15 +80,17 @@ fn play(siv: &mut Cursive) {
             .child(score_label)
             .child(score),
     );
-    let action_bubble = Dialog::around(TextView::new("...").with_name("action"));
+    let action_bubble =
+        Dialog::around(TextView::new("...").center().with_name("action")).title("Last Action");
     let side_stack = Dialog::around(
         LinearLayout::vertical()
             .child(score_view)
             .child(DummyView::new())
             .child(action_bubble)
-            .child(width_padding)
-            .child(Dialog::around(get_pause_button())),
-    );
+            .child(width_padding),
+    )
+    .title("ESC to pause")
+    .title_position(cursive::align::HAlign::Center);
     let board = Board::new(); // TODO: pass settings here, eventually
     siv.add_layer(
         OnEventView::new(
@@ -107,11 +109,6 @@ fn play(siv: &mut Cursive) {
 }
 
 // helprs
-fn get_pause_button() -> Button {
-    Button::new("Pause", |s| {
-        pause_menu_popup(s);
-    })
-}
 fn pause_menu_popup(s: &mut Cursive) {
     s.add_layer(
         OnEventView::new(
@@ -148,9 +145,7 @@ down arrow | fast fall piece
 [spacebar] | hold
 "#,
         ))
-        .button("Cancel", |s| {
-            s.pop_layer();
-        })
+        .dismiss_button("Close")
         .title("Controls"),
     );
 }
