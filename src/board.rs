@@ -12,14 +12,15 @@ use cursive::theme::BaseColor;
 use cursive::theme::Color;
 use cursive::view::CannotFocus;
 use cursive::view::Margins;
+use cursive::view::scroll::layout;
 use cursive::views::DummyView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
 use std::time;
 use std::time::Instant;
 
-static BOARD_WIDTH: usize = 10;
-static BOARD_HEIGHT: usize = 20;
+pub static BOARD_WIDTH: usize = 10;
+pub static BOARD_HEIGHT: usize = 20;
 
 #[derive(PartialEq, Clone, Copy)]
 enum ScaleMode {
@@ -50,10 +51,16 @@ pub struct Board {
     scale_mode: ScaleMode,
     tiles: [[Tile; BOARD_WIDTH]; BOARD_HEIGHT],
     needs_relayout: bool,
-    // current piece things
+
+    // piece things
     current_piece: Piece,
+    next_piece: Piece,
     last_tick: time::Instant,
-    tick_time: time::Duration, // make this vary by level/difficultu
+    tick_time: time::Duration, // make this vary by level/difficulty
+
+    //stats
+    score: u32,
+    level: u8,
 }
 
 impl Board {
@@ -63,9 +70,15 @@ impl Board {
             scale_mode: ScaleMode::default(),
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
             needs_relayout: false,
-            current_piece: Piece::random_new(), // TODO placeholder
+            // TODO impl proper piece spawning
+            current_piece: Piece::random_new().at(5, -1),
+            next_piece: Piece::random_new(),
             last_tick: time::Instant::now(),
             tick_time: time::Duration::from_millis(STARTING_TICK_TIME_MILLIS),
+
+            // stats
+            score: 0,
+            level: 1,
         }
     }
     fn draw_tile(&self, printer: &Printer, tile: Tile, row: usize, col: usize) {
@@ -102,9 +115,10 @@ impl Board {
 
     fn handle_event(&mut self, event: Event) -> EventResult {
         match event {
+            // refresh handles gravity logic
             Event::Refresh => self.handle_refresh(),
             Event::Key(Key::Left) => {
-                self.current_piece.move_left();
+                self.try_piece_movement(&Piece::move_left);
                 EventResult::with_cb(|s| {
                     s.call_on_name("action", |t: &mut TextView| {
                         t.set_content("Moved Left!");
@@ -112,7 +126,7 @@ impl Board {
                 })
             }
             Event::Key(Key::Right) => {
-                self.current_piece.move_right();
+                self.try_piece_movement(&Piece::move_right);
                 EventResult::with_cb(|s| {
                     s.call_on_name("action", |t: &mut TextView| {
                         t.set_content("Moved Right!");
@@ -120,7 +134,7 @@ impl Board {
                 })
             }
             Event::Key(Key::Down) => {
-                self.current_piece.move_down();
+                self.try_piece_movement(&Piece::move_down);
                 EventResult::with_cb(|s| {
                     s.call_on_name("action", |t: &mut TextView| {
                         t.set_content("Moved Down!");
@@ -134,7 +148,7 @@ impl Board {
             }),
 
             Event::Char('z') => {
-                self.current_piece.rotate_left();
+                self.try_piece_movement(&Piece::rotate_left);
                 EventResult::with_cb(|s| {
                     s.call_on_name("action", |t: &mut TextView| {
                         t.set_content("Rotated Left!");
@@ -142,7 +156,7 @@ impl Board {
                 })
             }
             Event::Char('x') => {
-                self.current_piece.rotate_right();
+                self.try_piece_movement(&Piece::rotate_right);
                 EventResult::with_cb(|s| {
                     s.call_on_name("action", |t: &mut TextView| {
                         t.set_content("Rotated Right!");
@@ -155,8 +169,19 @@ impl Board {
     // handle refresh logic, like what to do relayout is needed
     fn handle_refresh(&mut self) -> EventResult {
         // check to move down current piece
-        self.check_to_move_down_piece_based_on_tick_time();
+        self.check_to_tick_down_piece();
         // check to see if we need to relayout
+        return self.check_to_relayout();
+    }
+    fn check_to_tick_down_piece(&mut self) {
+        let now = Instant::now();
+        if now > self.last_tick + self.tick_time {
+            // TODO placement and next piece logic
+            self.try_piece_movement(&Piece::move_down);
+            self.last_tick = now;
+        }
+    }
+    fn check_to_relayout(&mut self) -> EventResult {
         if !self.needs_relayout {
             return EventResult::Ignored;
         }
@@ -168,12 +193,48 @@ impl Board {
             });
         })
     }
-    fn check_to_move_down_piece_based_on_tick_time(&mut self) {
-        let now = Instant::now();
-        if now > self.last_tick + self.tick_time {
-            self.current_piece.move_down();
-            self.last_tick = now;
+    fn try_piece_movement<F>(&mut self, mut f: F) -> bool
+    where
+        F: FnMut(&mut Piece),
+    {
+        let mut temp = self.current_piece.clone();
+        // try movement by transforming temp
+        f(&mut temp);
+
+        if self.valid_piece(&temp) {
+            self.current_piece = temp;
+            true
+        } else {
+            //don't transform current piece
+            false
         }
+    }
+    fn valid_piece(&self, piece: &Piece) -> bool {
+        // this order matters, checking intersection can get an out of bounds error if
+        // we don't check bounds first
+        !piece.is_out_of_bounds() && !self.check_if_piece_intersects_any_blocks(piece)
+    }
+    fn check_if_piece_intersects_any_blocks(&self, piece: &Piece) -> bool {
+        for i in 0..piece.layout().len() {
+            for j in 0..piece.layout()[i].len() {
+                let tile = piece.layout()[i][j];
+                if tile.is_none() {
+                    continue; // we do not care, no block
+                }
+                let x = j as i8 + piece.coord().0;
+                let y = i as i8 + piece.coord().1;
+
+                // out of bounds guard to be extra safe
+                if x < 0 || y < 0 || x >= BOARD_WIDTH as i8 || y >= BOARD_HEIGHT as i8 {
+                    continue;
+                }
+                match self.tiles[y as usize][x as usize] {
+                    None => continue,
+                    Some(_) => return true,
+                }
+            }
+        }
+        false
     }
 }
 
@@ -232,15 +293,5 @@ impl View for Board {
                 }
             }
         }
-        // TODO: test print red rect at bottom right corner
-        printer.with_style(Color::Dark(BaseColor::Red), |p| {
-            p.print(
-                (
-                    self.tiles[0].len() * 2 * self.scale_mode.get_scale() - 1,
-                    self.tiles.len() * self.scale_mode.get_scale() - 1,
-                ),
-                BLOCK_CHAR,
-            );
-        });
     }
 }

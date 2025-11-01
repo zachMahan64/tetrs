@@ -1,4 +1,7 @@
-use crate::tile::{Block, Tile};
+use crate::{
+    board,
+    tile::{Block, Tile},
+};
 use rand::Rng;
 
 #[derive(Clone, Copy)]
@@ -45,8 +48,8 @@ impl PieceType {
 
         static I_LAYOUT: Lay = [
             [0, 0, 0, 0],
-            [0, 0, 0, 0],
             [1, 1, 1, 1],
+            [0, 0, 0, 0],
             [0, 0, 0, 0],
         ];
         static O_LAYOUT: Lay = [
@@ -110,7 +113,7 @@ impl PieceType {
         layout
     }
 }
-
+#[derive(Clone, Copy)]
 pub struct Piece {
     piece_type: PieceType,
     layout: PieceLayout,
@@ -148,7 +151,11 @@ impl Piece {
             coord: (0, 0),
         }
     }
-    pub fn at(&mut self, x: i8, y: i8) -> &mut Self {
+    pub fn at(mut self, x: i8, y: i8) -> Self {
+        self.coord = (x, y);
+        self
+    }
+    pub fn set_at(&mut self, x: i8, y: i8) -> &Self {
         self.coord = (x, y);
         self
     }
@@ -263,5 +270,23 @@ impl Piece {
             }
         }
         self.layout = temp;
+    }
+    // checks if piece is out of bounds for movement purposes, but pieces above the board are not
+    // considered out of bounds
+    pub fn is_out_of_bounds(&self) -> bool {
+        for i in 0..self.layout.len() {
+            for j in 0..self.layout[i].len() {
+                let tile = self.layout[i][j];
+                if tile.is_none() {
+                    continue; // we do not care, no block
+                }
+                let x = j as i8 + self.coord.0;
+                let y = i as i8 + self.coord.1;
+                if x < 0 || x >= board::BOARD_WIDTH as i8 || y >= board::BOARD_HEIGHT as i8 {
+                    return true;
+                }
+            }
+        }
+        false
     }
 }

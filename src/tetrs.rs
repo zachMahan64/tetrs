@@ -1,4 +1,5 @@
 use crate::board::Board;
+use crate::ids;
 use crate::text_art;
 use cursive::Cursive;
 use cursive::CursiveRunnable;
@@ -66,19 +67,30 @@ pub fn show_title_menu(s: &mut Cursive) {
 fn play(siv: &mut Cursive) {
     siv.pop_layer();
     // widest element as a DummyView with padding,
-    let width_padding = PaddedView::lrtb(8, 9, 10, 0, DummyView).with_name("padded");
+    let width_padding = PaddedView::lrtb(8, 9, 10, 0, DummyView).with_name(ids::PADDED);
+
     let high_score_label = TextView::new("High Score")
         .center()
         .style(Effect::Underline);
-    let high_score = TextView::new("1000").center().with_name("highscore"); // TODO add logic
+    let high_score = TextView::new("1000").center().with_name(ids::HIGH_SCORE); // TODO add logic
     let score_label = TextView::new("Score").center().style(Effect::Underline);
-    let score = TextView::new("0").center().with_name("score"); // TODO add logic
+    let score = TextView::new("0").center().with_name(ids::SCORE); // TODO add logic
+
+    let lines_label = TextView::new("Lines").center().style(Effect::Underline);
+    let lines = TextView::new("0").center().with_name(ids::LINES); // TODO add logic
+    let level_label = TextView::new("Level").center().style(Effect::Underline);
+    let level = TextView::new("0").center().with_name(ids::LEVEL); // TODO add logic
+
     let score_view = Dialog::around(
         LinearLayout::vertical()
             .child(high_score_label)
             .child(high_score)
             .child(score_label)
-            .child(score),
+            .child(score)
+            .child(lines_label)
+            .child(lines)
+            .child(level_label)
+            .child(level),
     );
     let action_bubble =
         Dialog::around(TextView::new("...").center().with_name("action")).title("Last Action");
