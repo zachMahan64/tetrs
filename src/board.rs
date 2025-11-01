@@ -15,6 +15,8 @@ use cursive::view::Margins;
 use cursive::views::DummyView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
+use std::time;
+use std::time::Instant;
 
 static BOARD_WIDTH: usize = 10;
 static BOARD_HEIGHT: usize = 20;
@@ -50,26 +52,46 @@ pub struct Board {
     needs_relayout: bool,
     // current piece things
     current_piece: Piece,
+    last_tick: time::Instant,
+    tick_time: time::Duration, // make this vary by level/difficultu
 }
 
 impl Board {
     pub fn new() -> Self {
-        let mut board = Board {
+        const STARTING_TICK_TIME_MILLIS: u64 = 1000;
+        Board {
             scale_mode: ScaleMode::default(),
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
             needs_relayout: false,
             current_piece: Piece::random_new(), // TODO placeholder
-        };
-        // TODO: test
-        board.tiles[2][4] = Some(Block::Cyan);
-        board.tiles[3][4] = Some(Block::Cyan);
-        board.tiles[3][5] = Some(Block::Cyan);
-        board.tiles[3][6] = Some(Block::Cyan);
-        board
+            last_tick: time::Instant::now(),
+            tick_time: time::Duration::from_millis(STARTING_TICK_TIME_MILLIS),
+        }
     }
-
+    fn draw_tile(&self, printer: &Printer, tile: Tile, row: usize, col: usize) {
+        let i = self.scale_mode.get_scale() * row;
+        // constant 2 to account for characters inheritantly being narrow
+        let j = self.scale_mode.get_scale() * col * 2;
+        match self.scale_mode {
+            ScaleMode::Small => {
+                // 2 chars wide, 1 char tall
+                for dx in 0..2 {
+                    Board::draw_tile_char(printer, tile, (j + dx, i));
+                }
+            }
+            ScaleMode::Large => {
+                for dx in 0..4 {
+                    // 4 chars wide
+                    for dy in 0..2 {
+                        // 2 chars tall
+                        Board::draw_tile_char(printer, tile, (j + dx, i + dy));
+                    }
+                }
+            }
+        }
+    }
     // helper
-    fn draw_tile(printer: &Printer, tile: Option<Block>, coord: (usize, usize)) {
+    fn draw_tile_char(printer: &Printer, tile: Option<Block>, coord: (usize, usize)) {
         match tile {
             Some(block) => printer.with_style(block.get_color(), |p| p.print(coord, BLOCK_CHAR)),
             None => printer.with_style(Color::Dark(BaseColor::Black), |p| {
@@ -81,42 +103,60 @@ impl Board {
     fn handle_event(&mut self, event: Event) -> EventResult {
         match event {
             Event::Refresh => self.handle_refresh(),
-            Event::Key(Key::Left) => EventResult::with_cb(|s| {
-                s.call_on_name("action", |t: &mut TextView| {
-                    t.set_content("Moved Left!");
-                });
-            }),
-            Event::Key(Key::Right) => EventResult::with_cb(|s| {
-                s.call_on_name("action", |t: &mut TextView| {
-                    t.set_content("Moved Right!");
-                });
-            }),
-            Event::Key(Key::Down) => EventResult::with_cb(|s| {
-                s.call_on_name("action", |t: &mut TextView| {
-                    t.set_content("Moved Down!");
-                });
-            }),
+            Event::Key(Key::Left) => {
+                self.current_piece.move_left();
+                EventResult::with_cb(|s| {
+                    s.call_on_name("action", |t: &mut TextView| {
+                        t.set_content("Moved Left!");
+                    });
+                })
+            }
+            Event::Key(Key::Right) => {
+                self.current_piece.move_right();
+                EventResult::with_cb(|s| {
+                    s.call_on_name("action", |t: &mut TextView| {
+                        t.set_content("Moved Right!");
+                    });
+                })
+            }
+            Event::Key(Key::Down) => {
+                self.current_piece.move_down();
+                EventResult::with_cb(|s| {
+                    s.call_on_name("action", |t: &mut TextView| {
+                        t.set_content("Moved Down!");
+                    });
+                })
+            }
             Event::Key(Key::Up) => EventResult::with_cb(|s| {
                 s.call_on_name("action", |t: &mut TextView| {
                     t.set_content("Fast Dropped!");
                 });
             }),
 
-            Event::Char('z') => EventResult::with_cb(|s| {
-                s.call_on_name("action", |t: &mut TextView| {
-                    t.set_content("Rotated Left!");
-                });
-            }),
-            Event::Char('x') => EventResult::with_cb(|s| {
-                s.call_on_name("action", |t: &mut TextView| {
-                    t.set_content("Rotated Right!");
-                });
-            }),
+            Event::Char('z') => {
+                self.current_piece.rotate_left();
+                EventResult::with_cb(|s| {
+                    s.call_on_name("action", |t: &mut TextView| {
+                        t.set_content("Rotated Left!");
+                    });
+                })
+            }
+            Event::Char('x') => {
+                self.current_piece.rotate_right();
+                EventResult::with_cb(|s| {
+                    s.call_on_name("action", |t: &mut TextView| {
+                        t.set_content("Rotated Right!");
+                    });
+                })
+            }
             _ => EventResult::Ignored,
         }
     }
     // handle refresh logic, like what to do relayout is needed
     fn handle_refresh(&mut self) -> EventResult {
+        // check to move down current piece
+        self.check_to_move_down_piece_based_on_tick_time();
+        // check to see if we need to relayout
         if !self.needs_relayout {
             return EventResult::Ignored;
         }
@@ -127,6 +167,13 @@ impl Board {
                 t.set_margins(margins);
             });
         })
+    }
+    fn check_to_move_down_piece_based_on_tick_time(&mut self) {
+        let now = Instant::now();
+        if now > self.last_tick + self.tick_time {
+            self.current_piece.move_down();
+            self.last_tick = now;
+        }
     }
 }
 
@@ -160,42 +207,28 @@ impl View for Board {
     }
 
     fn draw(&self, printer: &Printer) {
-        // rendering logic for current piece, TODO: handle overlap and scale issues here
-        for i in 0..self.current_piece.layout.len() {
-            for j in 0..self.current_piece.layout[i].len() {
-                Board::draw_tile(
-                    printer,
-                    self.current_piece.layout[i][j],
-                    (
-                        j + self.current_piece.coord.0 as usize, // TODO handle negatives properly
-                        i + self.current_piece.coord.1 as usize, // TODO handle negatives properly
-                    ),
-                );
-            }
-        }
         // rendering logic for static board
         for i in 0..self.tiles.len() {
             for j in 0..self.tiles[i].len() {
                 let tile = self.tiles[i][j];
-                let i = self.scale_mode.get_scale() * i;
-                // constant 2 to account for characters inheritantly being narrow
-                let j = self.scale_mode.get_scale() * j * 2;
-                match self.scale_mode {
-                    ScaleMode::Small => {
-                        // 2 chars wide, 1 char tall
-                        for dx in 0..2 {
-                            Board::draw_tile(printer, tile, (j + dx, i));
-                        }
-                    }
-                    ScaleMode::Large => {
-                        for dx in 0..4 {
-                            // 4 chars wide
-                            for dy in 0..2 {
-                                // 2 chars tall
-                                Board::draw_tile(printer, tile, (j + dx, i + dy));
-                            }
-                        }
-                    }
+                self.draw_tile(printer, tile, i, j);
+            }
+        }
+        // draw piece AFTER board, simply "project" it onto the board
+        for i in 0..self.current_piece.layout().len() {
+            for j in 0..self.current_piece.layout()[i].len() {
+                let tile = self.current_piece.layout()[i][j];
+                let row = self.current_piece.coord().1 + i as i8;
+                let col = self.current_piece.coord().0 + j as i8;
+                // don't attempt to print negatives
+                if row < 0 || col < 0 {
+                    continue;
+                }
+                match tile {
+                    // don't draw black tiles on None becuz we don't want to overwrite anything on
+                    // static board
+                    None => {}
+                    _ => self.draw_tile(printer, tile, row as usize, col as usize),
                 }
             }
         }

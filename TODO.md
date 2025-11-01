@@ -1,11 +1,14 @@
 ### To-Do list
 #### Core
-- Piece rotation & collision (Board should own a "current piece" and should handle most logic). Piece should just expose rotate methods, but no logic handling
-- Piece rendering, board.draw needs to render current piece too, not just the static board 
+- Collision
+    - Rot: impl by cloning piece call rotation, check if theres a conflict -> if no make piece = cloned piece (which rotates it)
+    - Movement: simpler, so don't clone piece, just look into board and see if tiles w/ blocks +/- 1 are collinear
+    - Downward sticking: for "sticky" mode, don't make it stick until the next tick (i.e. not immediately)
+    - Bug test core gameplay before moving on
 - Line clearing
 - Score/non-persistent highscore w/ names
-- Advanced stats (live) -> inputs per second (average overall and last ~3 seconds)
 - Difficulty (levels 1-10, maybe more?)
+- Advanced stats (live) -> inputs per second (average overall and last ~3 seconds)
 - Music w/ rodio (toggle-able)
 #### Extra
 - Persisent highscore (file, decide where) and advanced stats?

@@ -1,7 +1,8 @@
 use crate::tile::{Block, Tile};
 use rand::Rng;
 
-enum PieceType {
+#[derive(Clone, Copy)]
+pub enum PieceType {
     I,
     O,
     J,
@@ -111,14 +112,23 @@ impl PieceType {
 }
 
 pub struct Piece {
-    pub piece_type: PieceType,
-    pub layout: PieceLayout,
+    piece_type: PieceType,
+    layout: PieceLayout,
     // of top left, signed so piece itself can go to edge even when top left of 4x4 layout is at
     // some 0 coord
-    pub coord: (i8, i8),
+    coord: (i8, i8),
 }
 
 impl Piece {
+    pub fn piece_type(&self) -> PieceType {
+        self.piece_type
+    }
+    pub fn layout(&self) -> &PieceLayout {
+        &self.layout
+    }
+    pub fn coord(&self) -> (i8, i8) {
+        self.coord
+    }
     pub fn random_new() -> Self {
         let mut rng = rand::rng();
         let piece_type = match rng.random_range(0..=6) {
@@ -142,6 +152,17 @@ impl Piece {
         self.coord = (x, y);
         self
     }
+    pub fn move_left(&mut self) {
+        self.coord.0 -= 1
+    }
+
+    pub fn move_right(&mut self) {
+        self.coord.0 += 1;
+    }
+    pub fn move_down(&mut self) {
+        self.coord.1 += 1;
+    }
+
     pub fn move_by(&mut self, x: i8, y: i8) {
         self.coord.0 += x;
         self.coord.1 += y;
@@ -204,42 +225,38 @@ impl Piece {
 
         match self.piece_type.get_rot_diameter() {
             4 => {
-                temp[0][0] = self.layout[0][0];
-                temp[0][1] = self.layout[1][0];
-                temp[0][2] = self.layout[2][0];
-                temp[0][3] = self.layout[3][0];
+                temp[0][0] = self.layout[3][0];
+                temp[0][1] = self.layout[2][0];
+                temp[0][2] = self.layout[1][0];
+                temp[0][3] = self.layout[0][0];
 
-                temp[1][0] = self.layout[0][1];
-                temp[1][1] = self.layout[1][1];
-                temp[1][2] = self.layout[2][1];
-                temp[1][3] = self.layout[3][1];
+                temp[1][0] = self.layout[3][1];
+                temp[1][1] = self.layout[2][1];
+                temp[1][2] = self.layout[1][1];
+                temp[1][3] = self.layout[0][1];
 
-                temp[2][0] = self.layout[0][2];
-                temp[2][1] = self.layout[1][2];
-                temp[2][2] = self.layout[2][2];
-                temp[2][3] = self.layout[3][2];
+                temp[2][0] = self.layout[3][2];
+                temp[2][1] = self.layout[2][2];
+                temp[2][2] = self.layout[1][2];
+                temp[2][3] = self.layout[0][2];
 
-                temp[3][0] = self.layout[0][3];
-                temp[3][1] = self.layout[1][3];
-                temp[3][2] = self.layout[2][3];
-                temp[3][3] = self.layout[3][3];
+                temp[3][0] = self.layout[3][3];
+                temp[3][1] = self.layout[2][3];
+                temp[3][2] = self.layout[1][3];
+                temp[3][3] = self.layout[0][3];
             }
             3 => {
-                temp[0][0] = self.layout[0][0];
+                temp[0][2] = self.layout[0][0];
+                temp[1][2] = self.layout[0][1];
+                temp[2][2] = self.layout[0][2];
+
                 temp[0][1] = self.layout[1][0];
-                temp[0][2] = self.layout[2][0];
-
-                temp[1][0] = self.layout[0][1];
                 temp[1][1] = self.layout[1][1];
-                temp[1][2] = self.layout[2][1];
-
-                temp[2][0] = self.layout[0][2];
                 temp[2][1] = self.layout[1][2];
-                temp[2][2] = self.layout[2][2];
 
-                temp[3][0] = self.layout[0][3];
-                temp[3][1] = self.layout[1][3];
-                temp[3][2] = self.layout[2][3];
+                temp[0][0] = self.layout[2][0];
+                temp[1][0] = self.layout[2][1];
+                temp[2][0] = self.layout[2][2];
             }
             _ => {
                 //impossible, but we'll know it fails because the piece will be empty
