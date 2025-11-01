@@ -72,14 +72,14 @@ fn play(siv: &mut Cursive) {
     let high_score_label = TextView::new("High Score")
         .center()
         .style(Effect::Underline);
-    let high_score = TextView::new("1000").center().with_name(ids::HIGH_SCORE); // TODO add logic
+    let high_score = TextView::new("1000").center().with_name(ids::HIGH_SCORE);
     let score_label = TextView::new("Score").center().style(Effect::Underline);
-    let score = TextView::new("0").center().with_name(ids::SCORE); // TODO add logic
+    let score = TextView::new("0").center().with_name(ids::SCORE);
 
     let lines_label = TextView::new("Lines").center().style(Effect::Underline);
-    let lines = TextView::new("0").center().with_name(ids::LINES); // TODO add logic
+    let lines = TextView::new("0").center().with_name(ids::LINES);
     let level_label = TextView::new("Level").center().style(Effect::Underline);
-    let level = TextView::new("0").center().with_name(ids::LEVEL); // TODO add logic
+    let level = TextView::new("0").center().with_name(ids::LEVEL);
 
     let score_view = Dialog::around(
         LinearLayout::vertical()

@@ -1,3 +1,4 @@
+use crate::ids;
 use crate::piece::Piece;
 use crate::text_art::BLOCK_CHAR;
 use crate::tile::Block;
@@ -12,7 +13,6 @@ use cursive::theme::BaseColor;
 use cursive::theme::Color;
 use cursive::view::CannotFocus;
 use cursive::view::Margins;
-use cursive::view::scroll::layout;
 use cursive::views::DummyView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
@@ -24,6 +24,7 @@ pub static BOARD_HEIGHT: usize = 20;
 
 #[derive(PartialEq, Clone, Copy)]
 enum ScaleMode {
+    TooSmall,
     Small,
     Large,
 }
@@ -31,6 +32,7 @@ enum ScaleMode {
 impl ScaleMode {
     fn get_scale(&self) -> usize {
         match self {
+            Self::TooSmall => 1,
             Self::Small => 1,
             Self::Large => 2,
         }
@@ -40,7 +42,7 @@ impl ScaleMode {
     }
     fn get_side_stack_margins(&self) -> Margins {
         match self {
-            Self::Small => Margins::lrtb(8, 9, 0, 0),
+            Self::Small | Self::TooSmall => Margins::lrtb(8, 9, 0, 0),
             ScaleMode::Large => Margins::lrtb(8, 9, 10, 0),
         }
     }
@@ -60,6 +62,7 @@ pub struct Board {
 
     //stats
     score: u32,
+    lines: u32,
     level: u8,
 }
 
@@ -71,13 +74,14 @@ impl Board {
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
             needs_relayout: false,
             // TODO impl proper piece spawning
-            current_piece: Piece::random_new().at(5, -1),
+            current_piece: Piece::random_new().at(4, 0),
             next_piece: Piece::random_new(),
             last_tick: time::Instant::now(),
             tick_time: time::Duration::from_millis(STARTING_TICK_TIME_MILLIS),
 
             // stats
             score: 0,
+            lines: 0,
             level: 1,
         }
     }
@@ -86,7 +90,7 @@ impl Board {
         // constant 2 to account for characters inheritantly being narrow
         let j = self.scale_mode.get_scale() * col * 2;
         match self.scale_mode {
-            ScaleMode::Small => {
+            ScaleMode::Small | ScaleMode::TooSmall => {
                 // 2 chars wide, 1 char tall
                 for dx in 0..2 {
                     Board::draw_tile_char(printer, tile, (j + dx, i));
@@ -116,7 +120,7 @@ impl Board {
     fn handle_event(&mut self, event: Event) -> EventResult {
         match event {
             // refresh handles gravity logic
-            Event::Refresh => self.handle_refresh(),
+            Event::Refresh => self.on_refresh(),
             Event::Key(Key::Left) => {
                 self.try_piece_movement(&Piece::move_left);
                 EventResult::with_cb(|s| {
@@ -167,11 +171,11 @@ impl Board {
         }
     }
     // handle refresh logic, like what to do relayout is needed
-    fn handle_refresh(&mut self) -> EventResult {
+    fn on_refresh(&mut self) -> EventResult {
         // check to move down current piece
         self.check_to_tick_down_piece();
         // check to see if we need to relayout
-        return self.check_to_relayout();
+        return self.handle_refresh();
     }
     fn check_to_tick_down_piece(&mut self) {
         let now = Instant::now();
@@ -181,15 +185,27 @@ impl Board {
             self.last_tick = now;
         }
     }
-    fn check_to_relayout(&mut self) -> EventResult {
+    fn handle_refresh(&mut self) -> EventResult {
         if !self.needs_relayout {
             return EventResult::Ignored;
         }
         self.needs_relayout = false; //reset 
         let margins = self.scale_mode.get_side_stack_margins();
+        let score = self.score.clone();
+        let level = self.level.clone();
+        let lines = self.lines.clone();
         EventResult::with_cb(move |s| {
-            s.call_on_name("padded", |t: &mut PaddedView<DummyView>| {
+            s.call_on_name(ids::PADDED, |t: &mut PaddedView<DummyView>| {
                 t.set_margins(margins);
+            });
+            s.call_on_name(ids::SCORE, |t: &mut TextView| {
+                t.set_content(format!("{}", score));
+            });
+            s.call_on_name(ids::LEVEL, |t: &mut TextView| {
+                t.set_content(format!("{}", level));
+            });
+            s.call_on_name(ids::LINES, |t: &mut TextView| {
+                t.set_content(format!("{}", lines));
             });
         })
     }
@@ -248,14 +264,21 @@ impl View for Board {
 
     fn required_size(&mut self, constraint: cursive::XY<usize>) -> cursive::XY<usize> {
         let starting_scale = self.scale_mode.clone();
+
+        let small_x = BOARD_WIDTH * 2 * ScaleMode::Small.get_scale();
+        let small_y = BOARD_HEIGHT * ScaleMode::Small.get_scale();
+
         let large_x = BOARD_WIDTH * 2 * ScaleMode::Large.get_scale();
         let large_y = BOARD_HEIGHT * ScaleMode::Large.get_scale();
 
-        if large_x > constraint.pair().0 || large_y > constraint.pair().1 {
+        if small_x > constraint.pair().0 || small_y > constraint.pair().1 {
+            self.scale_mode = ScaleMode::TooSmall;
+        } else if large_x > constraint.pair().0 || large_y > constraint.pair().1 {
             self.scale_mode = ScaleMode::Small;
         } else {
             self.scale_mode = ScaleMode::Large;
         }
+
         let updated_scale = self.scale_mode.clone();
 
         if starting_scale != updated_scale {
@@ -292,6 +315,18 @@ impl View for Board {
                     _ => self.draw_tile(printer, tile, row as usize, col as usize),
                 }
             }
+        }
+
+        match self.scale_mode {
+            ScaleMode::TooSmall => {
+                let enlargement_notice_0 = "  Window Too Small  ";
+                let enlargement_notice_1 = "Increase Window Size";
+                printer.with_style(Color::Dark(BaseColor::Red), |p| {
+                    p.print((0, 0), enlargement_notice_0);
+                    p.print((0, 1), enlargement_notice_1);
+                })
+            }
+            _ => {}
         }
     }
 }
