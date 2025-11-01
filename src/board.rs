@@ -1,3 +1,4 @@
+use crate::piece::Piece;
 use crate::text_art::BLOCK_CHAR;
 use crate::tile::Block;
 use crate::tile::Tile;
@@ -48,14 +49,16 @@ pub struct Board {
     tiles: [[Tile; BOARD_WIDTH]; BOARD_HEIGHT],
     needs_relayout: bool,
     // current piece things
+    current_piece: Piece,
 }
 
 impl Board {
     pub fn new() -> Self {
         let mut board = Board {
-            scale_mode: ScaleMode::default(), // make variable eventually
+            scale_mode: ScaleMode::default(),
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
             needs_relayout: false,
+            current_piece: Piece::random_new(), // TODO placeholder
         };
         // TODO: test
         board.tiles[2][4] = Some(Block::Cyan);
@@ -157,7 +160,20 @@ impl View for Board {
     }
 
     fn draw(&self, printer: &Printer) {
-        //TODO: add rendering logic for current piece
+        // rendering logic for current piece, TODO: handle overlap and scale issues here
+        for i in 0..self.current_piece.layout.len() {
+            for j in 0..self.current_piece.layout[i].len() {
+                Board::draw_tile(
+                    printer,
+                    self.current_piece.layout[i][j],
+                    (
+                        j + self.current_piece.coord.0 as usize, // TODO handle negatives properly
+                        i + self.current_piece.coord.1 as usize, // TODO handle negatives properly
+                    ),
+                );
+            }
+        }
+        // rendering logic for static board
         for i in 0..self.tiles.len() {
             for j in 0..self.tiles[i].len() {
                 let tile = self.tiles[i][j];

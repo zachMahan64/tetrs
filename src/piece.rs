@@ -1,4 +1,5 @@
 use crate::tile::{Block, Tile};
+use rand::Rng;
 
 enum PieceType {
     I,
@@ -11,6 +12,12 @@ enum PieceType {
 }
 
 const LAYOUT_LEN: usize = 4;
+pub type PieceLayout = [[Tile; LAYOUT_LEN]; LAYOUT_LEN];
+
+pub enum Rotation {
+    Left,
+    Right,
+}
 
 impl PieceType {
     fn get_colored_block(&self) -> Block {
@@ -32,7 +39,7 @@ impl PieceType {
             _ => 3,
         }
     }
-    fn get_layout(&self) -> [[Tile; LAYOUT_LEN]; LAYOUT_LEN] {
+    fn get_layout(&self) -> PieceLayout {
         type Lay = [[u8; LAYOUT_LEN]; LAYOUT_LEN];
 
         static I_LAYOUT: Lay = [
@@ -90,11 +97,8 @@ impl PieceType {
 
         self.to_tilemap(bitmap_layout)
     }
-    fn to_tilemap(
-        &self,
-        bitmap: [[u8; LAYOUT_LEN]; LAYOUT_LEN],
-    ) -> [[Tile; LAYOUT_LEN]; LAYOUT_LEN] {
-        let mut layout: [[Tile; LAYOUT_LEN]; LAYOUT_LEN] = [[None; LAYOUT_LEN]; LAYOUT_LEN];
+    fn to_tilemap(&self, bitmap: [[u8; LAYOUT_LEN]; LAYOUT_LEN]) -> PieceLayout {
+        let mut layout: PieceLayout = [[None; LAYOUT_LEN]; LAYOUT_LEN];
         for i in 0..LAYOUT_LEN {
             for j in 0..LAYOUT_LEN {
                 if bitmap[i][j] == 1 {
@@ -106,10 +110,141 @@ impl PieceType {
     }
 }
 
-struct Piece {
-    piece_type: PieceType,
-    layout: [[Tile; LAYOUT_LEN]; LAYOUT_LEN],
+pub struct Piece {
+    pub piece_type: PieceType,
+    pub layout: PieceLayout,
     // of top left, signed so piece itself can go to edge even when top left of 4x4 layout is at
     // some 0 coord
-    coord: (i8, i8),
+    pub coord: (i8, i8),
+}
+
+impl Piece {
+    pub fn random_new() -> Self {
+        let mut rng = rand::rng();
+        let piece_type = match rng.random_range(0..=6) {
+            0 => PieceType::I,
+            1 => PieceType::O,
+            2 => PieceType::J,
+            3 => PieceType::L,
+            4 => PieceType::S,
+            5 => PieceType::Z,
+            6 => PieceType::T,
+            _ => PieceType::I, // shouldn't happen
+        };
+        let layout = piece_type.get_layout();
+        Self {
+            piece_type: piece_type,
+            layout: layout,
+            coord: (0, 0),
+        }
+    }
+    pub fn at(&mut self, x: i8, y: i8) -> &mut Self {
+        self.coord = (x, y);
+        self
+    }
+    pub fn move_by(&mut self, x: i8, y: i8) {
+        self.coord.0 += x;
+        self.coord.1 += y;
+    }
+    pub fn rotate(&mut self, rotation: Rotation) {
+        match rotation {
+            Rotation::Left => {
+                self.rotate_left();
+            }
+            Rotation::Right => {
+                self.rotate_right();
+            }
+        }
+    }
+    pub fn rotate_left(&mut self) {
+        let mut temp: PieceLayout = [[None; 4]; 4];
+        match self.piece_type.get_rot_diameter() {
+            4 => {
+                temp[0][0] = self.layout[0][3];
+                temp[0][1] = self.layout[1][3];
+                temp[0][2] = self.layout[2][3];
+                temp[0][3] = self.layout[3][3];
+
+                temp[1][0] = self.layout[0][2];
+                temp[1][1] = self.layout[1][2];
+                temp[1][2] = self.layout[2][2];
+                temp[1][3] = self.layout[3][2];
+
+                temp[2][0] = self.layout[0][1];
+                temp[2][1] = self.layout[1][1];
+                temp[2][2] = self.layout[2][1];
+                temp[2][3] = self.layout[3][1];
+
+                temp[3][0] = self.layout[0][0];
+                temp[3][1] = self.layout[1][0];
+                temp[3][2] = self.layout[2][0];
+                temp[3][3] = self.layout[3][0];
+            }
+            3 => {
+                temp[0][0] = self.layout[0][2];
+                temp[0][1] = self.layout[1][2];
+                temp[0][2] = self.layout[2][2];
+
+                temp[1][0] = self.layout[0][1];
+                temp[1][1] = self.layout[1][1];
+                temp[1][2] = self.layout[2][1];
+
+                temp[2][0] = self.layout[0][0];
+                temp[2][1] = self.layout[1][0];
+                temp[2][2] = self.layout[2][0];
+            }
+            _ => {
+                //impossible, but we'll know it fails because the piece will be empty
+            }
+        }
+        self.layout = temp;
+    }
+    pub fn rotate_right(&mut self) {
+        let mut temp: PieceLayout = [[None; 4]; 4];
+
+        match self.piece_type.get_rot_diameter() {
+            4 => {
+                temp[0][0] = self.layout[0][0];
+                temp[0][1] = self.layout[1][0];
+                temp[0][2] = self.layout[2][0];
+                temp[0][3] = self.layout[3][0];
+
+                temp[1][0] = self.layout[0][1];
+                temp[1][1] = self.layout[1][1];
+                temp[1][2] = self.layout[2][1];
+                temp[1][3] = self.layout[3][1];
+
+                temp[2][0] = self.layout[0][2];
+                temp[2][1] = self.layout[1][2];
+                temp[2][2] = self.layout[2][2];
+                temp[2][3] = self.layout[3][2];
+
+                temp[3][0] = self.layout[0][3];
+                temp[3][1] = self.layout[1][3];
+                temp[3][2] = self.layout[2][3];
+                temp[3][3] = self.layout[3][3];
+            }
+            3 => {
+                temp[0][0] = self.layout[0][0];
+                temp[0][1] = self.layout[1][0];
+                temp[0][2] = self.layout[2][0];
+
+                temp[1][0] = self.layout[0][1];
+                temp[1][1] = self.layout[1][1];
+                temp[1][2] = self.layout[2][1];
+
+                temp[2][0] = self.layout[0][2];
+                temp[2][1] = self.layout[1][2];
+                temp[2][2] = self.layout[2][2];
+
+                temp[3][0] = self.layout[0][3];
+                temp[3][1] = self.layout[1][3];
+                temp[3][2] = self.layout[2][3];
+            }
+            _ => {
+                //impossible, but we'll know it fails because the piece will be empty
+            }
+        }
+        self.layout = temp;
+    }
 }
