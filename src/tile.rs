@@ -14,6 +14,7 @@ pub enum Block {
     Black,
     White,
     Orange,
+    Gray,
 }
 
 impl Block {
@@ -28,6 +29,7 @@ impl Block {
             Block::Black => Color::Dark(BaseColor::Black),
             Block::White => Color::Dark(BaseColor::White),
             Block::Orange => Color::RgbLowRes(5, 3, 0),
+            Block::Gray => Color::RgbLowRes(1, 1, 1),
         }
     }
 }

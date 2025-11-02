@@ -162,7 +162,7 @@ impl Board {
             // refresh handles gravity logic
             Event::Refresh => self.on_refresh(),
             Event::Key(Key::Left) => {
-                self.try_piece_movement(&Piece::move_left);
+                self.try_current_piece_movement(&Piece::move_left);
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Move Left!");
@@ -170,7 +170,7 @@ impl Board {
                 })
             }
             Event::Key(Key::Right) => {
-                self.try_piece_movement(&Piece::move_right);
+                self.try_current_piece_movement(&Piece::move_right);
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Move Right!");
@@ -178,7 +178,7 @@ impl Board {
                 })
             }
             Event::Key(Key::Down) => {
-                if !self.try_piece_movement(&Piece::move_down) {
+                if !self.try_current_piece_movement(&Piece::move_down) {
                     self.consume_piece();
                 }
                 EventResult::with_cb(|s| {
@@ -188,7 +188,7 @@ impl Board {
                 })
             }
             Event::Key(Key::Up) => {
-                while self.try_piece_movement(&Piece::move_down) {}
+                while self.try_current_piece_movement(&Piece::move_down) {}
                 self.consume_piece();
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
@@ -198,7 +198,7 @@ impl Board {
             }
 
             Event::Char('z') => {
-                self.try_piece_movement(&Piece::rotate_left);
+                self.try_current_piece_movement(&Piece::rotate_left);
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Rotate Left!");
@@ -206,7 +206,7 @@ impl Board {
                 })
             }
             Event::Char('x') => {
-                self.try_piece_movement(&Piece::rotate_right);
+                self.try_current_piece_movement(&Piece::rotate_right);
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Rotate Right!");
@@ -233,7 +233,7 @@ impl Board {
         }
         self.last_tick = now;
         // only consume piece and check loss if it can't move
-        if !self.try_piece_movement(&Piece::move_down) {
+        if !self.try_current_piece_movement(&Piece::move_down) {
             self.consume_piece();
         }
         TickState::Ticked
@@ -409,7 +409,7 @@ impl Board {
             });
         })
     }
-    fn try_piece_movement<F>(&mut self, mut f: F) -> bool
+    fn try_current_piece_movement<F>(&mut self, mut f: F) -> bool
     where
         F: FnMut(&mut Piece),
     {
@@ -419,6 +419,22 @@ impl Board {
 
         if self.valid_piece(&temp) {
             self.current_piece = temp;
+            true
+        } else {
+            //don't transform current piece
+            false
+        }
+    }
+    fn try_piece_movement<F>(&self, piece: &mut Piece, mut f: F) -> bool
+    where
+        F: FnMut(&mut Piece),
+    {
+        let mut temp = piece.clone();
+        // try movement by transforming temp
+        f(&mut temp);
+
+        if self.valid_piece(&temp) {
+            *piece = temp;
             true
         } else {
             //don't transform current piece
@@ -498,7 +514,29 @@ impl View for Board {
                 self.draw_tile(printer, tile, i, j);
             }
         }
-        // draw piece AFTER board, simply "project" it onto the board
+        // draw stateless ghost piece
+        let mut ghost_piece = self.current_piece.clone();
+        // shift ghost piece down all the way
+        while self.try_piece_movement(&mut ghost_piece, &Piece::move_down) {}
+
+        for i in 0..ghost_piece.layout().len() {
+            for j in 0..ghost_piece.layout()[i].len() {
+                let tile = ghost_piece.layout()[i][j];
+                let row = ghost_piece.coord().1 + i as i8;
+                let col = ghost_piece.coord().0 + j as i8;
+                // don't attempt to print negatives
+                if row < 0 || col < 0 {
+                    continue;
+                }
+                match tile {
+                    // draw non-none tiles as gray for ghostly appearance
+                    None => {}
+                    _ => self.draw_tile(printer, Some(Block::Gray), row as usize, col as usize),
+                }
+            }
+        }
+        // draw piece AFTER board and ghost piece, simply "project" it onto everything, should
+        // never be obstructed
         for i in 0..self.current_piece.layout().len() {
             for j in 0..self.current_piece.layout()[i].len() {
                 let tile = self.current_piece.layout()[i][j];
@@ -516,7 +554,6 @@ impl View for Board {
                 }
             }
         }
-
         match self.scale_mode {
             ScaleMode::TooSmall => {
                 let enlargement_notice_0 = "  Window Too Small  ";
