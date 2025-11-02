@@ -1,4 +1,5 @@
 use crate::board::Board;
+use crate::board::BoardSettings;
 use crate::ids;
 use crate::piece::PieceView;
 use crate::text_art;
@@ -224,7 +225,11 @@ fn play(siv: &mut Cursive) {
         .child(action_bubble)
         .child(PaddedView::lrtb(8, 8, 0, 0, DummyView::new()));
 
-    let board = Board::new(get_level());
+    let settings = BoardSettings {
+        starting_level: get_level(),
+        ghost_piece_on: true,
+    };
+    let board = Board::new(settings);
     siv.add_layer(
         OnEventView::new(
             Dialog::around(

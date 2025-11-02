@@ -76,6 +76,9 @@ pub struct Board {
     level: u8,
     starting_level: u8,
     high_score: u32,
+
+    // settable settings,
+    ghost_piece_on: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -89,8 +92,13 @@ enum TickState {
     Ticked,
 }
 
+pub struct BoardSettings {
+    pub starting_level: u8,
+    pub ghost_piece_on: bool,
+}
+
 impl Board {
-    pub fn new(starting_level: u8) -> Self {
+    pub fn new(settings: BoardSettings) -> Self {
         const STARTING_TICK_TIME_MILLIS: u64 = 1000;
         let mut board = Board {
             // static board stuff
@@ -108,18 +116,26 @@ impl Board {
             // stats
             score: 0,
             lines: 0,
-            level: starting_level,
-            starting_level: starting_level,
+            level: settings.starting_level,
+            starting_level: settings.starting_level,
             high_score: 0,
+
+            // settings
+            ghost_piece_on: settings.ghost_piece_on,
         };
         board.update_tick_time();
         board
     }
+    pub fn get_settings(&self) -> BoardSettings {
+        BoardSettings {
+            starting_level: self.starting_level,
+            ghost_piece_on: self.ghost_piece_on,
+        }
+    }
     fn restart(&mut self) {
         let old_high_score = self.high_score;
         let latest_score = self.score;
-        let starting_level = self.starting_level;
-        *self = Board::new(starting_level);
+        *self = Board::new(self.get_settings());
         self.high_score = match latest_score > old_high_score {
             true => latest_score,
             false => old_high_score,
@@ -517,21 +533,23 @@ impl View for Board {
         // draw stateless ghost piece
         let mut ghost_piece = self.current_piece.clone();
         // shift ghost piece down all the way
-        while self.try_piece_movement(&mut ghost_piece, &Piece::move_down) {}
+        if self.ghost_piece_on {
+            while self.try_piece_movement(&mut ghost_piece, &Piece::move_down) {}
 
-        for i in 0..ghost_piece.layout().len() {
-            for j in 0..ghost_piece.layout()[i].len() {
-                let tile = ghost_piece.layout()[i][j];
-                let row = ghost_piece.coord().1 + i as i8;
-                let col = ghost_piece.coord().0 + j as i8;
-                // don't attempt to print negatives
-                if row < 0 || col < 0 {
-                    continue;
-                }
-                match tile {
-                    // draw non-none tiles as gray for ghostly appearance
-                    None => {}
-                    _ => self.draw_tile(printer, Some(Block::Gray), row as usize, col as usize),
+            for i in 0..ghost_piece.layout().len() {
+                for j in 0..ghost_piece.layout()[i].len() {
+                    let tile = ghost_piece.layout()[i][j];
+                    let row = ghost_piece.coord().1 + i as i8;
+                    let col = ghost_piece.coord().0 + j as i8;
+                    // don't attempt to print negatives
+                    if row < 0 || col < 0 {
+                        continue;
+                    }
+                    match tile {
+                        // draw non-none tiles as gray for ghostly appearance
+                        None => {}
+                        _ => self.draw_tile(printer, Some(Block::Gray), row as usize, col as usize),
+                    }
                 }
             }
         }
