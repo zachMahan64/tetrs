@@ -1,9 +1,9 @@
 use crate::ids;
 use crate::piece::Piece;
+use crate::tetrs;
 use crate::text_art::BLOCK_CHAR;
 use crate::tile::Block;
 use crate::tile::Tile;
-use cursive::Cursive;
 use cursive::Printer;
 use cursive::View;
 use cursive::direction::Direction;
@@ -18,8 +18,6 @@ use cursive::views::Dialog;
 use cursive::views::DummyView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
-use std::fs::OpenOptions;
-use std::io::Write;
 use std::time;
 use std::time::Instant;
 
@@ -197,31 +195,9 @@ impl Board {
         let refresh_state: (TickState, LossState) = self.check_to_tick_down_piece_and_loss();
         match refresh_state.0 {
             TickState::NotTicked => EventResult::Ignored,
-            TickState::Ticked => match refresh_state.1 {
-                LossState::Lost => {
-                    // TODO save high scores here
-                    self.restart();
-                    self.handle_refresh(Board::show_game_over_dialogue)
-                }
-                LossState::NotLost => self.handle_refresh(Board::cursive_no_op),
-            },
+            TickState::Ticked => self.handle_refresh(refresh_state.1),
         }
     }
-    fn show_game_over_dialogue(s: &mut Cursive) {
-        // TODO prompt for remember high score, will probably need static state
-        s.add_layer(
-            Dialog::around(TextView::new("Good job!").center())
-                .title("Game Over")
-                .button("Play Again", |s| {
-                    s.pop_layer();
-                })
-                .button("Return to Title", |s| {
-                    s.pop_layer();
-                    s.pop_layer();
-                }),
-        );
-    }
-    fn cursive_no_op(_s: &mut Cursive) {}
 
     fn check_to_tick_down_piece_and_loss(&mut self) -> (TickState, LossState) {
         let now = Instant::now();
@@ -261,10 +237,7 @@ impl Board {
         self.score += 1;
         false
     }
-    fn handle_refresh<F>(&mut self, f: F) -> EventResult
-    where
-        F: Fn(&mut Cursive) + std::marker::Sync + std::marker::Send + 'static,
-    {
+    fn handle_refresh(&mut self, loss_state: LossState) -> EventResult {
         if self.needs_relayout {
             self.needs_relayout = false; //reset 
         }
@@ -273,8 +246,36 @@ impl Board {
         let level = self.level;
         let lines = self.lines;
 
+        match loss_state {
+            LossState::NotLost => {}
+            LossState::Lost => self.restart(),
+        }
+
         EventResult::with_cb(move |s| {
-            f(s);
+            match loss_state {
+                LossState::NotLost => {}
+                LossState::Lost => {
+                    s.add_layer(
+                        Dialog::around(
+                            TextView::new(format!(
+                                "Score: {}\nLines: {}, \nLevel: {}",
+                                score, lines, level
+                            ))
+                            .center(),
+                        )
+                        .title("Game Over!")
+                        .button("Play Again", |s| {
+                            s.pop_layer();
+                        })
+                        .button("Return to Title", |s| {
+                            s.pop_layer();
+                            s.pop_layer();
+                            tetrs::show_title_menu(s);
+                        }),
+                    );
+                }
+            }
+
             s.call_on_name(ids::PADDED, |t: &mut PaddedView<DummyView>| {
                 t.set_margins(margins);
             });
