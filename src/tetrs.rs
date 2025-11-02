@@ -1,6 +1,5 @@
 use crate::board::Board;
 use crate::ids;
-use crate::piece::PieceType;
 use crate::piece::PieceView;
 use crate::text_art;
 use cursive::Cursive;
