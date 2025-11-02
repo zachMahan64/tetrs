@@ -1,5 +1,7 @@
 use crate::board::Board;
 use crate::ids;
+use crate::piece::PieceType;
+use crate::piece::PieceView;
 use crate::text_art;
 use cursive::Cursive;
 use cursive::CursiveRunnable;
@@ -14,7 +16,6 @@ use cursive::views::OnEventView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout};
-use std::num::ParseIntError;
 
 static mut LEVEL: u8 = 1;
 fn get_level() -> u8 {
@@ -213,22 +214,12 @@ fn play(siv: &mut Cursive) {
             .child(score_view)
             .child(DummyView::new())
             .child(action_bubble)
+            .child(DummyView::new())
+            .child(Dialog::around(PieceView::new().with_name(ids::NEXT_PIECE)).title("Next Piece"))
             .child(width_padding),
     )
     .title("ESC to pause")
     .title_position(cursive::align::HAlign::Center);
-
-    //TODO cruft
-    /*
-        let starting_current_level = siv.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-            t.get_content().source().to_owned()
-        });
-
-        let starting_level: Result<u8, ParseIntError> = match starting_current_level {
-            Some(lvl) => lvl.parse(),
-            None => Ok(1),
-        };
-    */
     let board = Board::new(get_level());
 
     siv.add_layer(
@@ -281,7 +272,7 @@ fn controls_menu_popup(s: &mut Cursive) {
 down arrow | fast fall piece
      Z     | rotate piece left 
      X     | rotate piece right 
-[spacebar] | hold
+     C     | hold
 "#,
         ))
         .dismiss_button("Close")

@@ -1,6 +1,11 @@
 use crate::{
     board,
+    text_art::BLOCK_CHAR,
     tile::{Block, Tile},
+};
+use cursive::{
+    Printer, View,
+    theme::{BaseColor, Color},
 };
 use rand::Rng;
 
@@ -129,6 +134,9 @@ impl Piece {
     pub fn layout(&self) -> &PieceLayout {
         &self.layout
     }
+    pub fn layout_mut(&mut self) -> &mut PieceLayout {
+        &mut self.layout
+    }
     pub fn coord(&self) -> (i8, i8) {
         self.coord
     }
@@ -151,6 +159,15 @@ impl Piece {
             coord: (0, 0),
         }
     }
+    pub fn new(piece_type: PieceType) -> Self {
+        let layout = piece_type.get_layout();
+        Self {
+            piece_type: piece_type,
+            layout: layout,
+            coord: (0, 0),
+        }
+    }
+
     pub fn at(mut self, x: i8, y: i8) -> Self {
         self.coord = (x, y);
         self
@@ -288,5 +305,112 @@ impl Piece {
             }
         }
         false
+    }
+}
+
+pub struct PieceView {
+    piece: Option<Piece>,
+    large: bool,
+}
+
+impl PieceView {
+    pub fn new() -> Self {
+        PieceView {
+            piece: None,
+            large: true,
+        }
+    }
+
+    pub fn set_piece(&mut self, piece: Piece) {
+        self.piece = Some(piece);
+        // shift up O (square) so he can fit into 2x4
+        if let Some(ref mut p) = self.piece {
+            match p.piece_type() {
+                PieceType::O => {
+                    for i in 0..PIECEVIEW_HEIGHT - 1 {
+                        p.layout_mut()[i] = p.layout_mut()[i + 1];
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    fn get_scale(&self) -> usize {
+        match self.large {
+            true => 2,
+            false => 1,
+        }
+    }
+    pub fn set_scale(&mut self, make_large: bool) {
+        self.large = make_large;
+    }
+    fn draw_tile(&self, printer: &Printer, tile: Tile, row: usize, col: usize) {
+        let i = self.get_scale() * row;
+        // constant 2 to account for characters inheritantly being narrow
+        let j = self.get_scale() * col * 2;
+        match self.large {
+            false => {
+                // 2 chars wide, 1 char tall
+                for dx in 0..2 {
+                    Self::draw_tile_char(printer, tile, (j + dx, i));
+                }
+            }
+            true => {
+                for dx in 0..4 {
+                    // 4 chars wide
+                    for dy in 0..2 {
+                        // 2 chars tall
+                        Self::draw_tile_char(printer, tile, (j + dx, i + dy));
+                    }
+                }
+            }
+        }
+    }
+    // helper
+    fn draw_tile_char(printer: &Printer, tile: Option<Block>, coord: (usize, usize)) {
+        match tile {
+            Some(block) => printer.with_style(block.get_color(), |p| p.print(coord, BLOCK_CHAR)),
+            None => printer.with_style(Color::Dark(BaseColor::Black), |p| {
+                p.print(coord, BLOCK_CHAR)
+            }),
+        }
+    }
+}
+
+const PIECEVIEW_WIDTH: usize = 4;
+const PIECEVIEW_HEIGHT: usize = 2;
+
+impl View for PieceView {
+    fn required_size(&mut self, constraint: cursive::XY<usize>) -> cursive::XY<usize> {
+        let large_x = PIECEVIEW_WIDTH * 2 * 2;
+        let large_y = PIECEVIEW_HEIGHT * 2;
+
+        // updates scale through the large flag
+        /*
+        if large_x > constraint.pair().0 || large_y > constraint.pair().1 {
+            self.large = false;
+        } else {
+            self.large = true;
+        }
+        */
+        let dimen_x = PIECEVIEW_WIDTH * 2 * self.get_scale();
+        let dimen_y = PIECEVIEW_HEIGHT * self.get_scale();
+        (dimen_x, dimen_y).into()
+    }
+    fn draw(&self, printer: &Printer) {
+        // rendering logic for static board
+        for i in 0..PIECEVIEW_HEIGHT {
+            for j in 0..PIECEVIEW_WIDTH {
+                match self.piece {
+                    None => {
+                        self.draw_tile(printer, None, i, j);
+                    }
+                    Some(piece) => {
+                        let tile = piece.layout()[i][j];
+                        self.draw_tile(printer, tile, i, j);
+                    }
+                }
+            }
+        }
     }
 }

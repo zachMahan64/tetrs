@@ -1,5 +1,6 @@
 use crate::ids;
 use crate::piece::Piece;
+use crate::piece::PieceView;
 use crate::tetrs;
 use crate::text_art::BLOCK_CHAR;
 use crate::tile::Block;
@@ -18,7 +19,6 @@ use cursive::views::Dialog;
 use cursive::views::DummyView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
-use std::cmp::max;
 use std::cmp::min;
 use std::time;
 use std::time::Instant;
@@ -218,8 +218,8 @@ impl Board {
         // check to move down current piece
         let tick_state: TickState = self.check_to_tick_down_piece();
         match tick_state {
-            TickState::NotTicked => EventResult::Ignored,
-            TickState::Ticked => self.handle_refresh(),
+            TickState::NotTicked => self.handle_no_tick(),
+            TickState::Ticked => self.handle_tick(),
         }
     }
 
@@ -292,11 +292,14 @@ impl Board {
     // clears any full lines on the board
     fn clear_any_full_lines(&mut self) {
         let mut num_cleared = 0;
-        for i in (0..BOARD_HEIGHT).rev() {
-            if self.tiles[i].iter().all(|t| t.is_some()) {
+        let mut i = BOARD_HEIGHT as isize - 1;
+        while i >= 0 {
+            if self.tiles[i as usize].iter().all(|t| t.is_some()) {
                 num_cleared += 1;
-                self.clear_line_and_shift_down(i);
+                self.clear_line_and_shift_down(i as usize);
+                i += 1; // recheck the same row after shifting down
             }
+            i -= 1;
         }
         self.award_points(num_cleared);
         self.lines += num_cleared as u32;
@@ -320,7 +323,7 @@ impl Board {
         points = points * self.level as u32;
         self.score += points;
     }
-    fn handle_refresh(&mut self) -> EventResult {
+    fn handle_tick(&mut self) -> EventResult {
         if self.needs_relayout {
             self.needs_relayout = false; //reset 
         }
@@ -330,6 +333,7 @@ impl Board {
         let lines = self.lines;
         let high_score = self.high_score;
         let loss_state = self.loss_state;
+        let next_piece = self.next_piece.clone();
 
         match loss_state {
             LossState::NotLost => {}
@@ -365,6 +369,10 @@ impl Board {
                 }
             }
 
+            s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
+                n.set_piece(next_piece);
+            });
+
             s.call_on_name(ids::PADDED, |t: &mut PaddedView<DummyView>| {
                 t.set_margins(margins);
             });
@@ -381,6 +389,19 @@ impl Board {
             });
             s.call_on_name(ids::HIGH_SCORE, |t: &mut TextView| {
                 t.set_content(format!("{}", high_score));
+            });
+        })
+    }
+    fn handle_no_tick(&mut self) -> EventResult {
+        let next_piece = self.next_piece;
+        let scale = self.scale_mode;
+        EventResult::with_cb(move |s| {
+            s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
+                n.set_piece(next_piece);
+                match scale {
+                    ScaleMode::TooSmall | ScaleMode::Small => n.set_scale(false),
+                    ScaleMode::Large => n.set_scale(true),
+                }
             });
         })
     }
