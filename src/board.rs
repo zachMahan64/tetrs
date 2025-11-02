@@ -18,6 +18,7 @@ use cursive::views::Dialog;
 use cursive::views::DummyView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
+use std::cmp::max;
 use std::cmp::min;
 use std::time;
 use std::time::Instant;
@@ -259,9 +260,9 @@ impl Board {
         // check to clear any lines that are now full after consuming a piece
         self.clear_any_full_lines();
         // update level and tick time accordingly
-        self.level += min(
+        self.level = min(
             MAX_LEVEL as u32,
-            self.lines as u32 / (10 * self.starting_level as u32),
+            max(1, self.lines as u32 / (10 * self.starting_level as u32)),
         ) as u8;
         self.update_tick_time();
         false
@@ -340,7 +341,7 @@ impl Board {
                 LossState::Lost => {
                     let game_over_title = match score > high_score {
                         true => "New High Score!",
-                        false => "Game Over",
+                        false => "Game Over!",
                     };
                     s.add_layer(
                         Dialog::around(
