@@ -18,13 +18,16 @@ use cursive::views::Dialog;
 use cursive::views::DummyView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
+use std::cmp::min;
 use std::time;
 use std::time::Instant;
 
-pub static BOARD_WIDTH: usize = 10;
-pub static BOARD_HEIGHT: usize = 20;
-pub static PIECE_START_X: i8 = 4;
-pub static PIECE_START_Y: i8 = -1;
+pub const BOARD_WIDTH: usize = 10;
+pub const BOARD_HEIGHT: usize = 20;
+pub const PIECE_START_X: i8 = 4;
+pub const PIECE_START_Y: i8 = -1;
+
+const MAX_LEVEL: u8 = 255;
 
 #[derive(PartialEq, Clone, Copy)]
 enum ScaleMode {
@@ -69,6 +72,7 @@ pub struct Board {
     score: u32,
     lines: u32,
     level: u8,
+    starting_level: u8,
     high_score: u32,
 }
 
@@ -84,7 +88,7 @@ enum TickState {
 }
 
 impl Board {
-    pub fn new() -> Self {
+    pub fn new(starting_level: u8) -> Self {
         const STARTING_TICK_TIME_MILLIS: u64 = 1000;
         Board {
             // static board stuff
@@ -102,14 +106,16 @@ impl Board {
             // stats
             score: 0,
             lines: 0,
-            level: 1,
+            level: starting_level,
+            starting_level: starting_level,
             high_score: 0,
         }
     }
     fn restart(&mut self) {
         let old_high_score = self.high_score;
         let latest_score = self.score;
-        *self = Board::new();
+        let starting_level = self.starting_level;
+        *self = Board::new(starting_level);
         self.high_score = match latest_score > old_high_score {
             true => latest_score,
             false => old_high_score,
@@ -249,29 +255,68 @@ impl Board {
         }
         self.current_piece = self.next_piece;
         self.next_piece = Piece::random_new().at(PIECE_START_X, PIECE_START_Y);
-        self.score += 1; // give pitu point
+        self.score += 1; // give pity point
         // check to clear any lines that are now full after consuming a piece
         self.clear_any_full_lines();
+        // update level and tick time accordingly
+        self.level += min(
+            MAX_LEVEL as u32,
+            self.lines as u32 / (10 * self.starting_level as u32),
+        ) as u8;
+        self.update_tick_time();
         false
+    }
+    // helper
+    fn update_tick_time(&mut self) {
+        let millis = match self.level {
+            0 => 800,
+            1 => 717,
+            2 => 633,
+            3 => 550,
+            4 => 467,
+            5 => 383,
+            6 => 300,
+            7 => 217,
+            8 => 133,
+            9 => 100,
+            10..=12 => 83,
+            13..=15 => 67,
+            16..=18 => 50,
+            19..=28 => 33,
+            _ => 17,
+        };
+        self.tick_time = std::time::Duration::from_millis(millis);
     }
     // clears any full lines on the board
     fn clear_any_full_lines(&mut self) {
-        for i in 0..self.tiles.len() {
-            let mut full_line = true;
-            for j in 0..self.tiles.len() {
-                if self.tiles[i][j].is_none() {
-                    full_line = false;
-                    break;
-                }
-            }
-            if full_line {
+        let mut num_cleared = 0;
+        for i in (0..BOARD_HEIGHT).rev() {
+            if self.tiles[i].iter().all(|t| t.is_some()) {
+                num_cleared += 1;
                 self.clear_line_and_shift_down(i);
             }
         }
+        self.award_points(num_cleared);
+        self.lines += num_cleared as u32;
     }
     // helper for clear_any_full_lines
     fn clear_line_and_shift_down(&mut self, row: usize) {
-        todo!()
+        for i in (1..=row).rev() {
+            self.tiles[i] = self.tiles[i - 1];
+        }
+        self.tiles[0] = [None; BOARD_WIDTH];
+    }
+
+    fn award_points(&mut self, num_cleared: u8) {
+        let mut points: u32 = match num_cleared {
+            1 => 100,
+            2 => 300,
+            3 => 500,
+            4 => 800,
+            _ => 0, // not possible
+        };
+        points = points * self.level as u32;
+        self.score += points;
     }
     fn handle_refresh(&mut self) -> EventResult {
         if self.needs_relayout {

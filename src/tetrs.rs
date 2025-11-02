@@ -104,7 +104,7 @@ fn play(siv: &mut Cursive) {
     )
     .title("ESC to pause")
     .title_position(cursive::align::HAlign::Center);
-    let board = Board::new(); // TODO: pass settings here, eventually
+    let board = Board::new(1); // TODO: pass full settings here, eventually
     siv.add_layer(
         OnEventView::new(
             Dialog::around(
