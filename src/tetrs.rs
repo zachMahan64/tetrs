@@ -16,6 +16,7 @@ use cursive::views::OnEventView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout};
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::{AtomicU8, Ordering};
 
 static LEVEL: AtomicU8 = AtomicU8::new(1);
@@ -26,6 +27,16 @@ pub fn get_level() -> u8 {
 
 pub fn set_level(v: u8) {
     LEVEL.store(v, Ordering::Relaxed)
+}
+
+static GHOST_PIECE_ON: AtomicBool = AtomicBool::new(true);
+
+pub fn get_ghost_piece_on() -> bool {
+    GHOST_PIECE_ON.load(Ordering::Relaxed)
+}
+
+pub fn set_ghost_piece_on(v: bool) {
+    GHOST_PIECE_ON.store(v, Ordering::Relaxed)
 }
 
 pub fn run() {
@@ -145,11 +156,27 @@ pub fn show_title_menu(s: &mut Cursive) {
                 ));
             });
         });
+        let toggle_ghost_piece_button = Button::new("Toggle Ghost Piece", |s| {
+            // toggle
+            set_ghost_piece_on(!get_ghost_piece_on());
+            // str displaying toggled value
+            let ghost_piece_str: String = match get_ghost_piece_on() {
+                true => "Ghost Piece Enabled.".to_string(),
+                false => "Ghost Piece Disabled.".to_string(),
+            };
+            s.add_layer(Dialog::around(TextView::new(ghost_piece_str)));
+        });
         s.add_layer(OnEventView::new(
             Dialog::around(
                 LinearLayout::vertical()
                     .child(DummyView)
-                    .child(LinearLayout::horizontal().child(starting_level_button)),
+                    .child(
+                        LinearLayout::horizontal()
+                            .child(starting_level_button)
+                            // TODO add a callback to change this
+                            .child(TextView::new(get_level().to_string())),
+                    )
+                    .child(toggle_ghost_piece_button),
             )
             .button("Cancel", |s| {
                 s.pop_layer();
