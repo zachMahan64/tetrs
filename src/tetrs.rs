@@ -15,17 +15,18 @@ use cursive::views::OnEventView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout};
+use std::sync::atomic::{AtomicU8, Ordering};
 
-static mut LEVEL: u8 = 1;
-fn get_level() -> u8 {
-    unsafe { LEVEL }
+static LEVEL: AtomicU8 = AtomicU8::new(1);
+
+pub fn get_level() -> u8 {
+    LEVEL.load(Ordering::Relaxed)
 }
 
-fn set_level(val: u8) {
-    unsafe {
-        LEVEL = val;
-    }
+pub fn set_level(v: u8) {
+    LEVEL.store(v, Ordering::Relaxed)
 }
+
 pub fn run() {
     let mut siv = CursiveRunnable::default();
     let mut theme = siv.current_theme().clone();
@@ -55,6 +56,7 @@ pub fn show_title_menu(s: &mut Cursive) {
                 t.get_content().source().to_owned()
             });
             s.add_layer(
+                // this is ugly, try to refactor
                 OnEventView::new(
                     Dialog::around(
                         TextView::new("Current level: 1").with_name(KEY_TO_CURRENT_LEVEL_VIEW),
