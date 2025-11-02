@@ -46,12 +46,13 @@ impl ScaleMode {
         }
     }
     fn default() -> Self {
-        Self::Large
+        Self::Small
     }
-    fn get_side_stack_margins(&self) -> Margins {
+    // useless currently, but could be useful
+    fn get_right_stack_margins(&self) -> Margins {
         match self {
-            Self::Small | Self::TooSmall => Margins::lrtb(8, 9, 0, 0),
-            ScaleMode::Large => Margins::lrtb(8, 9, 10, 0),
+            Self::Small | Self::TooSmall => Margins::lrtb(8, 8, 0, 0),
+            ScaleMode::Large => Margins::lrtb(8, 8, 0, 0),
         }
     }
 }
@@ -164,7 +165,7 @@ impl Board {
                 self.try_piece_movement(&Piece::move_left);
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
-                        t.set_content("Moved Left!");
+                        t.set_content("Move Left!");
                     });
                 })
             }
@@ -172,7 +173,7 @@ impl Board {
                 self.try_piece_movement(&Piece::move_right);
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
-                        t.set_content("Moved Right!");
+                        t.set_content("Move Right!");
                     });
                 })
             }
@@ -182,7 +183,7 @@ impl Board {
                 }
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
-                        t.set_content("Moved Down!");
+                        t.set_content("Move Down!");
                     });
                 })
             }
@@ -191,7 +192,7 @@ impl Board {
                 self.consume_piece();
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
-                        t.set_content("Fast Dropped!");
+                        t.set_content("Fast Drop!");
                     });
                 })
             }
@@ -200,7 +201,7 @@ impl Board {
                 self.try_piece_movement(&Piece::rotate_left);
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
-                        t.set_content("Rotated Left!");
+                        t.set_content("Rotate Left!");
                     });
                 })
             }
@@ -208,7 +209,7 @@ impl Board {
                 self.try_piece_movement(&Piece::rotate_right);
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
-                        t.set_content("Rotated Right!");
+                        t.set_content("Rotate Right!");
                     });
                 })
             }
@@ -272,6 +273,7 @@ impl Board {
     }
     // helper
     fn update_tick_time(&mut self) {
+        const CURVE: u64 = 15; // to not be too hard
         let millis = match self.level {
             0 => 800,
             1 => 717,
@@ -283,10 +285,10 @@ impl Board {
             7 => 217,
             8 => 133,
             9 => 100,
-            10..=12 => 83,
-            13..=15 => 67,
-            16..=18 => 50,
-            19..=28 => 33,
+            10..=12 => 83 + CURVE,
+            13..=15 => 67 + CURVE,
+            16..=18 => 50 + CURVE,
+            19..=28 => 33 + CURVE,
             _ => 17,
         };
         self.tick_time = std::time::Duration::from_millis(millis);
@@ -329,7 +331,7 @@ impl Board {
         if self.needs_relayout {
             self.needs_relayout = false; //reset 
         }
-        let margins = self.scale_mode.get_side_stack_margins();
+        let margins = self.scale_mode.get_right_stack_margins();
         let score = self.score;
         let level = self.level;
         let lines = self.lines;

@@ -181,7 +181,7 @@ pub fn show_title_menu(s: &mut Cursive) {
 fn play(siv: &mut Cursive) {
     siv.pop_layer();
     // widest element as a DummyView with padding,
-    let width_padding = PaddedView::lrtb(8, 9, 10, 0, DummyView).with_name(ids::PADDED);
+    let width_padding = PaddedView::lrtb(8, 8, 0, 0, DummyView).with_name(ids::PADDED);
 
     let high_score_label = TextView::new("High Score")
         .center()
@@ -220,7 +220,7 @@ fn play(siv: &mut Cursive) {
 
     let left_stack = LinearLayout::vertical()
         .child(action_bubble)
-        .child(PaddedView::lrtb(8, 9, 0, 0, DummyView::new()));
+        .child(PaddedView::lrtb(8, 8, 0, 0, DummyView::new()));
 
     let board = Board::new(get_level());
     siv.add_layer(
