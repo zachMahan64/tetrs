@@ -9,10 +9,23 @@ use cursive::theme::BaseColor;
 use cursive::theme::Effect;
 use cursive::traits::*;
 use cursive::views::DummyView;
+use cursive::views::HideableView;
 use cursive::views::OnEventView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
-use cursive::views::{Button, Dialog, LinearLayout, SelectView};
+use cursive::views::{Button, Dialog, LinearLayout};
+use std::num::ParseIntError;
+
+static mut LEVEL: u8 = 1;
+fn get_level() -> u8 {
+    unsafe { LEVEL }
+}
+
+fn set_level(val: u8) {
+    unsafe {
+        LEVEL = val;
+    }
+}
 pub fn run() {
     let mut siv = CursiveRunnable::default();
     let mut theme = siv.current_theme().clone();
@@ -27,7 +40,6 @@ pub fn run() {
 }
 
 pub fn show_title_menu(s: &mut Cursive) {
-    let select = SelectView::<String>::new().with_name("select");
     use cursive::theme::Color;
     let title_logo_view = LinearLayout::horizontal()
         .child(TextView::new(text_art::TETRS_T).style(Color::Dark(BaseColor::Red)))
@@ -35,15 +47,117 @@ pub fn show_title_menu(s: &mut Cursive) {
         .child(TextView::new(text_art::TETRS_T).style(Color::Dark(BaseColor::Green)))
         .child(TextView::new(text_art::TETRS_R).style(Color::Dark(BaseColor::Cyan)))
         .child(TextView::new(text_art::TETRS_S).style(Color::Dark(BaseColor::Magenta)));
-    let settings_button = Button::new("Settings", |s| {
-        s.add_layer(
-            Dialog::around(TextView::new("Sorry, there's nothing to set just yet."))
-                .button("Cancel", |s| {
+
+    let settings_button = Button::new("Settings", move |s| {
+        const KEY_TO_CURRENT_LEVEL_VIEW: &str = "curr_lvl";
+        let starting_level_button = Button::new("Change Starting Level", |s| {
+            let starting_current_level = s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                t.get_content().source().to_owned()
+            });
+            s.add_layer(
+                OnEventView::new(
+                    Dialog::around(
+                        TextView::new("Current level: 1").with_name(KEY_TO_CURRENT_LEVEL_VIEW),
+                    )
+                    .button("1", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("1");
+                        });
+                        set_level(1);
+                        s.pop_layer();
+                    })
+                    .button("2", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("2");
+                        });
+                        set_level(2);
+                        s.pop_layer();
+                    })
+                    .button("3", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("3");
+                        });
+                        set_level(3);
+                        s.pop_layer();
+                    })
+                    .button("4", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("4");
+                        });
+                        set_level(4);
+                        s.pop_layer();
+                    })
+                    .button("5", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("5");
+                        });
+                        set_level(5);
+                        s.pop_layer();
+                    })
+                    .button("6", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("6");
+                        });
+                        set_level(6);
+                        s.pop_layer();
+                    })
+                    .button("7", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("7");
+                        });
+                        set_level(7);
+                        s.pop_layer();
+                    })
+                    .button("8", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("8");
+                        });
+                        set_level(8);
+                        s.pop_layer();
+                    })
+                    .button("9", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("9");
+                        });
+                        set_level(9);
+                        s.pop_layer();
+                    })
+                    .button("10", |s| {
+                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+                            t.set_content("10");
+                        });
+                        set_level(10);
+                        s.pop_layer();
+                    })
+                    .title("Select a Level | ESC to close"),
+                )
+                .on_event(Event::Key(Key::Esc), |s| {
                     s.pop_layer();
-                })
-                .title("Settings"),
-        );
+                }),
+            );
+            s.call_on_name(KEY_TO_CURRENT_LEVEL_VIEW, move |t: &mut TextView| {
+                t.set_content(format!(
+                    "Current level: {}",
+                    starting_current_level.unwrap()
+                ));
+            });
+        });
+        s.add_layer(OnEventView::new(
+            Dialog::around(
+                LinearLayout::vertical()
+                    .child(DummyView)
+                    .child(LinearLayout::horizontal().child(starting_level_button)),
+            )
+            .button("Cancel", |s| {
+                s.pop_layer();
+            })
+            .title("Settings"),
+        ));
     });
+
+    // settings holder
+    let starting_score_container =
+        HideableView::new(TextView::new("1").with_name(ids::STARTING_LEVEL)).hidden();
 
     let buttons = LinearLayout::vertical()
         .child(Button::new("Play", &play))
@@ -52,10 +166,9 @@ pub fn show_title_menu(s: &mut Cursive) {
     let title_view = OnEventView::new(
         Dialog::around(
             LinearLayout::vertical()
-                .child(select)
-                .child(title_logo_view)
-                .child(DummyView::new())
-                .child(buttons),
+                .child(PaddedView::lrtb(0, 0, 1, 1, title_logo_view))
+                .child(buttons)
+                .child(starting_score_container),
         )
         .title("Tetrs / Rust Edition | By Zach Mahan"),
     )
@@ -73,14 +186,14 @@ fn play(siv: &mut Cursive) {
     let high_score_label = TextView::new("High Score")
         .center()
         .style(Effect::Underline);
-    let high_score = TextView::new("0").center().with_name(ids::HIGH_SCORE);
+    let high_score = TextView::new("00000").center().with_name(ids::HIGH_SCORE);
     let score_label = TextView::new("Score").center().style(Effect::Underline);
-    let score = TextView::new("0").center().with_name(ids::SCORE);
+    let score = TextView::new("00000").center().with_name(ids::SCORE);
 
     let lines_label = TextView::new("Lines").center().style(Effect::Underline);
-    let lines = TextView::new("0").center().with_name(ids::LINES);
+    let lines = TextView::new("00000").center().with_name(ids::LINES);
     let level_label = TextView::new("Level").center().style(Effect::Underline);
-    let level = TextView::new("1").center().with_name(ids::LEVEL);
+    let level = TextView::new("00000").center().with_name(ids::LEVEL);
 
     let score_view = Dialog::around(
         LinearLayout::vertical()
@@ -104,7 +217,20 @@ fn play(siv: &mut Cursive) {
     )
     .title("ESC to pause")
     .title_position(cursive::align::HAlign::Center);
-    let board = Board::new(1); // TODO: pass full settings here, eventually
+
+    //TODO cruft
+    /*
+        let starting_current_level = siv.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
+            t.get_content().source().to_owned()
+        });
+
+        let starting_level: Result<u8, ParseIntError> = match starting_current_level {
+            Some(lvl) => lvl.parse(),
+            None => Ok(1),
+        };
+    */
+    let board = Board::new(get_level());
+
     siv.add_layer(
         OnEventView::new(
             Dialog::around(

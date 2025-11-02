@@ -28,7 +28,7 @@ pub const BOARD_HEIGHT: usize = 20;
 pub const PIECE_START_X: i8 = 4;
 pub const PIECE_START_Y: i8 = -1;
 
-const MAX_LEVEL: u8 = 255;
+const MAX_LEVEL: u8 = u8::MAX; //theoretically...
 
 #[derive(PartialEq, Clone, Copy)]
 enum ScaleMode {
@@ -260,10 +260,11 @@ impl Board {
         // check to clear any lines that are now full after consuming a piece
         self.clear_any_full_lines();
         // update level and tick time accordingly
-        self.level = min(
-            MAX_LEVEL as u32,
-            max(1, self.lines as u32 / (10 * self.starting_level as u32)),
-        ) as u8;
+        self.level = self.starting_level
+            + min(
+                MAX_LEVEL as u32,
+                self.lines as u32 / (10 * self.starting_level as u32),
+            ) as u8;
         self.update_tick_time();
         false
     }
