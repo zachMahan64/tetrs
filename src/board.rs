@@ -208,11 +208,17 @@ impl Board {
         }
     }
     fn show_game_over_dialogue(s: &mut Cursive) {
-        // TODO prompt for remember high score
+        // TODO prompt for remember high score, will probably need static state
         s.add_layer(
-            Dialog::around(TextView::new("Game Over!")).button("Close", |s| {
-                s.pop_layer();
-            }),
+            Dialog::around(TextView::new("Good job!").center())
+                .title("Game Over")
+                .button("Play Again", |s| {
+                    s.pop_layer();
+                })
+                .button("Return to Title", |s| {
+                    s.pop_layer();
+                    s.pop_layer();
+                }),
         );
     }
     fn cursive_no_op(_s: &mut Cursive) {}
