@@ -3,6 +3,7 @@ use crate::piece::Piece;
 use crate::text_art::BLOCK_CHAR;
 use crate::tile::Block;
 use crate::tile::Tile;
+use cursive::Cursive;
 use cursive::Printer;
 use cursive::View;
 use cursive::direction::Direction;
@@ -13,14 +14,19 @@ use cursive::theme::BaseColor;
 use cursive::theme::Color;
 use cursive::view::CannotFocus;
 use cursive::view::Margins;
+use cursive::views::Dialog;
 use cursive::views::DummyView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::time;
 use std::time::Instant;
 
 pub static BOARD_WIDTH: usize = 10;
 pub static BOARD_HEIGHT: usize = 20;
+pub static PIECE_START_X: i8 = 4;
+pub static PIECE_START_Y: i8 = -1;
 
 #[derive(PartialEq, Clone, Copy)]
 enum ScaleMode {
@@ -66,16 +72,28 @@ pub struct Board {
     level: u8,
 }
 
+enum LossState {
+    NotLost,
+    Lost,
+}
+
+enum TickState {
+    NotTicked,
+    Ticked,
+}
+
 impl Board {
     pub fn new() -> Self {
         const STARTING_TICK_TIME_MILLIS: u64 = 1000;
         Board {
+            // static board stuff
             scale_mode: ScaleMode::default(),
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
             needs_relayout: false,
-            // TODO impl proper piece spawning
-            current_piece: Piece::random_new().at(4, 0),
-            next_piece: Piece::random_new(),
+
+            // TODO impl proper piece spawning, maybe add a "bag feature"
+            current_piece: Piece::random_new().at(PIECE_START_X, PIECE_START_Y),
+            next_piece: Piece::random_new().at(PIECE_START_X, PIECE_START_Y),
             last_tick: time::Instant::now(),
             tick_time: time::Duration::from_millis(STARTING_TICK_TIME_MILLIS),
 
@@ -124,7 +142,7 @@ impl Board {
             Event::Key(Key::Left) => {
                 self.try_piece_movement(&Piece::move_left);
                 EventResult::with_cb(|s| {
-                    s.call_on_name("action", |t: &mut TextView| {
+                    s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Moved Left!");
                     });
                 })
@@ -132,7 +150,7 @@ impl Board {
             Event::Key(Key::Right) => {
                 self.try_piece_movement(&Piece::move_right);
                 EventResult::with_cb(|s| {
-                    s.call_on_name("action", |t: &mut TextView| {
+                    s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Moved Right!");
                     });
                 })
@@ -140,13 +158,13 @@ impl Board {
             Event::Key(Key::Down) => {
                 self.try_piece_movement(&Piece::move_down);
                 EventResult::with_cb(|s| {
-                    s.call_on_name("action", |t: &mut TextView| {
+                    s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Moved Down!");
                     });
                 })
             }
             Event::Key(Key::Up) => EventResult::with_cb(|s| {
-                s.call_on_name("action", |t: &mut TextView| {
+                s.call_on_name(ids::ACTION, |t: &mut TextView| {
                     t.set_content("Fast Dropped!");
                 });
             }),
@@ -154,7 +172,7 @@ impl Board {
             Event::Char('z') => {
                 self.try_piece_movement(&Piece::rotate_left);
                 EventResult::with_cb(|s| {
-                    s.call_on_name("action", |t: &mut TextView| {
+                    s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Rotated Left!");
                     });
                 })
@@ -162,7 +180,7 @@ impl Board {
             Event::Char('x') => {
                 self.try_piece_movement(&Piece::rotate_right);
                 EventResult::with_cb(|s| {
-                    s.call_on_name("action", |t: &mut TextView| {
+                    s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Rotated Right!");
                     });
                 })
@@ -173,34 +191,90 @@ impl Board {
     // handle refresh logic, like what to do relayout is needed
     fn on_refresh(&mut self) -> EventResult {
         // check to move down current piece
-        self.check_to_tick_down_piece();
-        // check to see if we need to relayout
-        return self.handle_refresh();
+        let refresh_state: (TickState, LossState) = self.check_to_tick_down_piece_and_loss();
+        // TODO add restart abilities
+        match refresh_state.0 {
+            TickState::NotTicked => EventResult::Ignored,
+            TickState::Ticked => match refresh_state.1 {
+                LossState::Lost => self.handle_refresh(Board::show_game_over_dialogue),
+                LossState::NotLost => self.handle_refresh(Board::cursive_no_op),
+            },
+        }
     }
-    fn check_to_tick_down_piece(&mut self) {
+    fn show_game_over_dialogue(s: &mut Cursive) {
+        s.add_layer(Dialog::around(TextView::new("Game Over!")).dismiss_button("Close"));
+    }
+    fn cursive_no_op(_s: &mut Cursive) {}
+
+    fn check_to_tick_down_piece_and_loss(&mut self) -> (TickState, LossState) {
         let now = Instant::now();
-        if now > self.last_tick + self.tick_time {
-            // TODO placement and next piece logic
-            self.try_piece_movement(&Piece::move_down);
-            self.last_tick = now;
+        if now < self.last_tick + self.tick_time {
+            return (TickState::NotTicked, LossState::NotLost); // we haven't ticked yet
+        }
+        self.last_tick = now;
+        // if movement succeds, return since we don't need to consume piece
+        if self.try_piece_movement(&Piece::move_down) {
+            return (TickState::Ticked, LossState::NotLost);
+        }
+        if self.consume_piece_and_check_loss() {
+            return (TickState::Ticked, LossState::Lost);
+        } else {
+            return (TickState::Ticked, LossState::NotLost);
         }
     }
-    fn handle_refresh(&mut self) -> EventResult {
-        if !self.needs_relayout {
-            return EventResult::Ignored;
+    fn consume_piece_and_check_loss(&mut self) -> bool {
+        let piece = &self.current_piece;
+        for i in 0..piece.layout().len() {
+            for j in 0..piece.layout()[i].len() {
+                let piece_tile = piece.layout()[i][j];
+                if piece_tile.is_none() {
+                    continue; // we do not care, no block in this tile
+                }
+                let x = j as i8 + piece.coord().0;
+                let y = i as i8 + piece.coord().1;
+                // piece too high, loss
+                if y < 0 {
+                    return true;
+                }
+                self.tiles[y as usize][x as usize] = piece_tile;
+            }
         }
-        self.needs_relayout = false; //reset 
+        self.current_piece = self.next_piece;
+        self.next_piece = Piece::random_new().at(PIECE_START_X, PIECE_START_Y);
+        self.score += 1;
+        false
+    }
+    fn handle_refresh<F>(&mut self, f: F) -> EventResult
+    where
+        F: Fn(&mut Cursive) + std::marker::Sync + std::marker::Send + 'static,
+    {
+        if self.needs_relayout {
+            self.needs_relayout = false; //reset 
+        }
         let margins = self.scale_mode.get_side_stack_margins();
-        let score = self.score.clone();
-        let level = self.level.clone();
-        let lines = self.lines.clone();
+        let score = self.score;
+        let level = self.level;
+        let lines = self.lines;
+
         EventResult::with_cb(move |s| {
+            f(s);
             s.call_on_name(ids::PADDED, |t: &mut PaddedView<DummyView>| {
                 t.set_margins(margins);
             });
+
             s.call_on_name(ids::SCORE, |t: &mut TextView| {
+                // TODO debug
+                /*
+                let mut file = OpenOptions::new()
+                    .create(true) // create if missing
+                    .append(true) // append instead of overwrite
+                    .open("log.txt")
+                    .unwrap();
+                writeln!(file, "{}", score).unwrap();
+                */
                 t.set_content(format!("{}", score));
             });
+
             s.call_on_name(ids::LEVEL, |t: &mut TextView| {
                 t.set_content(format!("{}", level));
             });

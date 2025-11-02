@@ -1,10 +1,6 @@
 ### To-Do list
-#### Core
-- Collision
-    - Rot: impl by cloning piece call rotation, check if theres a conflict -> if no make piece = cloned piece (which rotates it)
-    - Movement: simpler, so don't clone piece, just look into board and see if tiles w/ blocks +/- 1 are collinear
-    - Downward sticking: for "sticky" mode, don't make it stick until the next tick (i.e. not immediately)
-    - Bug test core gameplay before moving on
+#### Core 
+- Loss detection
 - Line clearing
 - Score/non-persistent highscore w/ names
 - Difficulty (levels 1-10, maybe more?)

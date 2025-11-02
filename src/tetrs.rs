@@ -21,7 +21,8 @@ pub fn run() {
     // enter title menu
     show_title_menu(&mut siv);
     // init cursive
-    siv.set_fps(60);
+    const FPS: u32 = 60;
+    siv.set_fps(FPS);
     siv.run();
 }
 
@@ -79,7 +80,7 @@ fn play(siv: &mut Cursive) {
     let lines_label = TextView::new("Lines").center().style(Effect::Underline);
     let lines = TextView::new("0").center().with_name(ids::LINES);
     let level_label = TextView::new("Level").center().style(Effect::Underline);
-    let level = TextView::new("0").center().with_name(ids::LEVEL);
+    let level = TextView::new("1").center().with_name(ids::LEVEL);
 
     let score_view = Dialog::around(
         LinearLayout::vertical()
@@ -93,7 +94,7 @@ fn play(siv: &mut Cursive) {
             .child(level),
     );
     let action_bubble =
-        Dialog::around(TextView::new("...").center().with_name("action")).title("Last Action");
+        Dialog::around(TextView::new("...").center().with_name(ids::ACTION)).title("Last Action");
     let side_stack = Dialog::around(
         LinearLayout::vertical()
             .child(score_view)
