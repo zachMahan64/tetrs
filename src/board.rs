@@ -103,6 +103,9 @@ impl Board {
             level: 1,
         }
     }
+    fn restart(&mut self) {
+        *self = Board::new();
+    }
     fn draw_tile(&self, printer: &Printer, tile: Tile, row: usize, col: usize) {
         let i = self.scale_mode.get_scale() * row;
         // constant 2 to account for characters inheritantly being narrow
@@ -192,17 +195,25 @@ impl Board {
     fn on_refresh(&mut self) -> EventResult {
         // check to move down current piece
         let refresh_state: (TickState, LossState) = self.check_to_tick_down_piece_and_loss();
-        // TODO add restart abilities
         match refresh_state.0 {
             TickState::NotTicked => EventResult::Ignored,
             TickState::Ticked => match refresh_state.1 {
-                LossState::Lost => self.handle_refresh(Board::show_game_over_dialogue),
+                LossState::Lost => {
+                    // TODO save high scores here
+                    self.restart();
+                    self.handle_refresh(Board::show_game_over_dialogue)
+                }
                 LossState::NotLost => self.handle_refresh(Board::cursive_no_op),
             },
         }
     }
     fn show_game_over_dialogue(s: &mut Cursive) {
-        s.add_layer(Dialog::around(TextView::new("Game Over!")).dismiss_button("Close"));
+        // TODO prompt for remember high score
+        s.add_layer(
+            Dialog::around(TextView::new("Game Over!")).button("Close", |s| {
+                s.pop_layer();
+            }),
+        );
     }
     fn cursive_no_op(_s: &mut Cursive) {}
 
@@ -263,15 +274,6 @@ impl Board {
             });
 
             s.call_on_name(ids::SCORE, |t: &mut TextView| {
-                // TODO debug
-                /*
-                let mut file = OpenOptions::new()
-                    .create(true) // create if missing
-                    .append(true) // append instead of overwrite
-                    .open("log.txt")
-                    .unwrap();
-                writeln!(file, "{}", score).unwrap();
-                */
                 t.set_content(format!("{}", score));
             });
 
