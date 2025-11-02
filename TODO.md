@@ -1,8 +1,6 @@
 ### To-Do list
 #### Core 
-- Loss detection
-- Line clearing
-- Score/non-persistent highscore w/ names
+- highscore w/ names + leaderboard
 - Difficulty (levels 1-10, maybe more?)
 - Advanced stats (live) -> inputs per second (average overall and last ~3 seconds)
 - Music w/ rodio (toggle-able)

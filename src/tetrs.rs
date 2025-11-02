@@ -73,7 +73,7 @@ fn play(siv: &mut Cursive) {
     let high_score_label = TextView::new("High Score")
         .center()
         .style(Effect::Underline);
-    let high_score = TextView::new("1000").center().with_name(ids::HIGH_SCORE);
+    let high_score = TextView::new("0").center().with_name(ids::HIGH_SCORE);
     let score_label = TextView::new("Score").center().style(Effect::Underline);
     let score = TextView::new("0").center().with_name(ids::SCORE);
 

@@ -57,6 +57,7 @@ pub struct Board {
     scale_mode: ScaleMode,
     tiles: [[Tile; BOARD_WIDTH]; BOARD_HEIGHT],
     needs_relayout: bool,
+    loss_state: LossState,
 
     // piece things
     current_piece: Piece,
@@ -68,8 +69,10 @@ pub struct Board {
     score: u32,
     lines: u32,
     level: u8,
+    high_score: u32,
 }
 
+#[derive(Clone, Copy)]
 enum LossState {
     NotLost,
     Lost,
@@ -88,6 +91,7 @@ impl Board {
             scale_mode: ScaleMode::default(),
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
             needs_relayout: false,
+            loss_state: LossState::NotLost,
 
             // TODO impl proper piece spawning, maybe add a "bag feature"
             current_piece: Piece::random_new().at(PIECE_START_X, PIECE_START_Y),
@@ -99,10 +103,17 @@ impl Board {
             score: 0,
             lines: 0,
             level: 1,
+            high_score: 0,
         }
     }
     fn restart(&mut self) {
+        let old_high_score = self.high_score;
+        let latest_score = self.score;
         *self = Board::new();
+        self.high_score = match latest_score > old_high_score {
+            true => latest_score,
+            false => old_high_score,
+        };
     }
     fn draw_tile(&self, printer: &Printer, tile: Tile, row: usize, col: usize) {
         let i = self.scale_mode.get_scale() * row;
@@ -157,18 +168,24 @@ impl Board {
                 })
             }
             Event::Key(Key::Down) => {
-                self.try_piece_movement(&Piece::move_down);
+                if !self.try_piece_movement(&Piece::move_down) {
+                    self.consume_piece();
+                }
                 EventResult::with_cb(|s| {
                     s.call_on_name(ids::ACTION, |t: &mut TextView| {
                         t.set_content("Moved Down!");
                     });
                 })
             }
-            Event::Key(Key::Up) => EventResult::with_cb(|s| {
-                s.call_on_name(ids::ACTION, |t: &mut TextView| {
-                    t.set_content("Fast Dropped!");
-                });
-            }),
+            Event::Key(Key::Up) => {
+                while self.try_piece_movement(&Piece::move_down) {}
+                self.consume_piece();
+                EventResult::with_cb(|s| {
+                    s.call_on_name(ids::ACTION, |t: &mut TextView| {
+                        t.set_content("Fast Dropped!");
+                    });
+                })
+            }
 
             Event::Char('z') => {
                 self.try_piece_movement(&Piece::rotate_left);
@@ -192,30 +209,27 @@ impl Board {
     // handle refresh logic, like what to do relayout is needed
     fn on_refresh(&mut self) -> EventResult {
         // check to move down current piece
-        let refresh_state: (TickState, LossState) = self.check_to_tick_down_piece_and_loss();
-        match refresh_state.0 {
+        let tick_state: TickState = self.check_to_tick_down_piece();
+        match tick_state {
             TickState::NotTicked => EventResult::Ignored,
-            TickState::Ticked => self.handle_refresh(refresh_state.1),
+            TickState::Ticked => self.handle_refresh(),
         }
     }
 
-    fn check_to_tick_down_piece_and_loss(&mut self) -> (TickState, LossState) {
+    fn check_to_tick_down_piece(&mut self) -> TickState {
         let now = Instant::now();
         if now < self.last_tick + self.tick_time {
-            return (TickState::NotTicked, LossState::NotLost); // we haven't ticked yet
+            return TickState::NotTicked; // we haven't ticked yet
         }
         self.last_tick = now;
-        // if movement succeds, return since we don't need to consume piece
-        if self.try_piece_movement(&Piece::move_down) {
-            return (TickState::Ticked, LossState::NotLost);
+        // only consume piece and check loss if it can't move
+        if !self.try_piece_movement(&Piece::move_down) {
+            self.consume_piece();
         }
-        if self.consume_piece_and_check_loss() {
-            return (TickState::Ticked, LossState::Lost);
-        } else {
-            return (TickState::Ticked, LossState::NotLost);
-        }
+        TickState::Ticked
     }
-    fn consume_piece_and_check_loss(&mut self) -> bool {
+    // sets self.LossState and also returns true if lost
+    fn consume_piece(&mut self) -> bool {
         let piece = &self.current_piece;
         for i in 0..piece.layout().len() {
             for j in 0..piece.layout()[i].len() {
@@ -227,6 +241,7 @@ impl Board {
                 let y = i as i8 + piece.coord().1;
                 // piece too high, loss
                 if y < 0 {
+                    self.loss_state = LossState::Lost;
                     return true;
                 }
                 self.tiles[y as usize][x as usize] = piece_tile;
@@ -234,10 +249,31 @@ impl Board {
         }
         self.current_piece = self.next_piece;
         self.next_piece = Piece::random_new().at(PIECE_START_X, PIECE_START_Y);
-        self.score += 1;
+        self.score += 1; // give pitu point
+        // check to clear any lines that are now full after consuming a piece
+        self.clear_any_full_lines();
         false
     }
-    fn handle_refresh(&mut self, loss_state: LossState) -> EventResult {
+    // clears any full lines on the board
+    fn clear_any_full_lines(&mut self) {
+        for i in 0..self.tiles.len() {
+            let mut full_line = true;
+            for j in 0..self.tiles.len() {
+                if self.tiles[i][j].is_none() {
+                    full_line = false;
+                    break;
+                }
+            }
+            if full_line {
+                self.clear_line_and_shift_down(i);
+            }
+        }
+    }
+    // helper for clear_any_full_lines
+    fn clear_line_and_shift_down(&mut self, row: usize) {
+        todo!()
+    }
+    fn handle_refresh(&mut self) -> EventResult {
         if self.needs_relayout {
             self.needs_relayout = false; //reset 
         }
@@ -245,6 +281,8 @@ impl Board {
         let score = self.score;
         let level = self.level;
         let lines = self.lines;
+        let high_score = self.high_score;
+        let loss_state = self.loss_state;
 
         match loss_state {
             LossState::NotLost => {}
@@ -255,15 +293,19 @@ impl Board {
             match loss_state {
                 LossState::NotLost => {}
                 LossState::Lost => {
+                    let game_over_title = match score > high_score {
+                        true => "New High Score!",
+                        false => "Game Over",
+                    };
                     s.add_layer(
                         Dialog::around(
                             TextView::new(format!(
-                                "Score: {}\nLines: {}, \nLevel: {}",
+                                "Score: {}\nLines: {} \nLevel: {}",
                                 score, lines, level
                             ))
                             .center(),
                         )
-                        .title("Game Over!")
+                        .title(game_over_title)
                         .button("Play Again", |s| {
                             s.pop_layer();
                         })
@@ -289,6 +331,9 @@ impl Board {
             });
             s.call_on_name(ids::LINES, |t: &mut TextView| {
                 t.set_content(format!("{}", lines));
+            });
+            s.call_on_name(ids::HIGH_SCORE, |t: &mut TextView| {
+                t.set_content(format!("{}", high_score));
             });
         })
     }
