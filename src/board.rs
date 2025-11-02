@@ -91,7 +91,7 @@ enum TickState {
 impl Board {
     pub fn new(starting_level: u8) -> Self {
         const STARTING_TICK_TIME_MILLIS: u64 = 1000;
-        Board {
+        let mut board = Board {
             // static board stuff
             scale_mode: ScaleMode::default(),
             tiles: [[None; BOARD_WIDTH]; BOARD_HEIGHT],
@@ -110,7 +110,9 @@ impl Board {
             level: starting_level,
             starting_level: starting_level,
             high_score: 0,
-        }
+        };
+        board.update_tick_time();
+        board
     }
     fn restart(&mut self) {
         let old_high_score = self.high_score;
