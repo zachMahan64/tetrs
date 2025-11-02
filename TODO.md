@@ -1,7 +1,6 @@
 ### To-Do list
 #### Core
 - Holding
-- Piece ghost
 - Next few pieces and/or piece by piece stats
 - Highscore w/ names + leaderboard
 - Advanced stats (live) -> inputs per second (average overall and last ~3 seconds)
