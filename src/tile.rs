@@ -28,7 +28,7 @@ impl Block {
             Block::Cyan => Color::Dark(BaseColor::Cyan),
             Block::Black => Color::Dark(BaseColor::Black),
             Block::White => Color::Dark(BaseColor::White),
-            Block::Orange => Color::RgbLowRes(5, 3, 0),
+            Block::Orange => Color::RgbLowRes(4, 2, 0),
             Block::Gray => Color::RgbLowRes(1, 1, 1),
         }
     }

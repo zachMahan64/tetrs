@@ -17,10 +17,12 @@ use cursive::views::PaddedView;
 use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout};
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicU8, AtomicU32, Ordering};
 
+// static atomic state (needed for referncing in cursive callbacks)
 static LEVEL: AtomicU8 = AtomicU8::new(1);
-
+static GHOST_PIECE_ON: AtomicBool = AtomicBool::new(true);
+static HIGH_SCORE: AtomicU32 = AtomicU32::new(0);
 pub fn get_level() -> u8 {
     LEVEL.load(Ordering::Relaxed)
 }
@@ -29,14 +31,19 @@ pub fn set_level(v: u8) {
     LEVEL.store(v, Ordering::Relaxed)
 }
 
-static GHOST_PIECE_ON: AtomicBool = AtomicBool::new(true);
-
 pub fn get_ghost_piece_on() -> bool {
     GHOST_PIECE_ON.load(Ordering::Relaxed)
 }
 
 pub fn set_ghost_piece_on(v: bool) {
     GHOST_PIECE_ON.store(v, Ordering::Relaxed)
+}
+pub fn get_high_score() -> u32 {
+    HIGH_SCORE.load(Ordering::Relaxed)
+}
+
+pub fn set_high_score(v: u32) {
+    HIGH_SCORE.store(v, Ordering::Relaxed);
 }
 
 pub fn run() {
@@ -61,141 +68,7 @@ pub fn show_title_menu(s: &mut Cursive) {
         .child(TextView::new(text_art::TETRS_R).style(Color::Dark(BaseColor::Cyan)))
         .child(TextView::new(text_art::TETRS_S).style(Color::Dark(BaseColor::Magenta)));
 
-    let settings_button = Button::new("Settings", move |s| {
-        const KEY_TO_CURRENT_LEVEL_VIEW: &str = "curr_lvl";
-        let starting_level_button = Button::new("Change Starting Level", |s| {
-            let starting_current_level = s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                t.get_content().source().to_owned()
-            });
-            s.add_layer(
-                // this is ugly, try to refactor
-                OnEventView::new(
-                    Dialog::around(
-                        TextView::new("Current level: 1").with_name(KEY_TO_CURRENT_LEVEL_VIEW),
-                    )
-                    .button("1", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("1");
-                        });
-                        set_level(1);
-                        s.pop_layer();
-                    })
-                    .button("2", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("2");
-                        });
-                        set_level(2);
-                        s.pop_layer();
-                    })
-                    .button("3", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("3");
-                        });
-                        set_level(3);
-                        s.pop_layer();
-                    })
-                    .button("4", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("4");
-                        });
-                        set_level(4);
-                        s.pop_layer();
-                    })
-                    .button("5", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("5");
-                        });
-                        set_level(5);
-                        s.pop_layer();
-                    })
-                    .button("6", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("6");
-                        });
-                        set_level(6);
-                        s.pop_layer();
-                    })
-                    .button("7", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("7");
-                        });
-                        set_level(7);
-                        s.pop_layer();
-                    })
-                    .button("8", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("8");
-                        });
-                        set_level(8);
-                        s.pop_layer();
-                    })
-                    .button("9", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("9");
-                        });
-                        set_level(9);
-                        s.pop_layer();
-                    })
-                    .button("10", |s| {
-                        s.call_on_name(ids::STARTING_LEVEL, |t: &mut TextView| {
-                            t.set_content("10");
-                        });
-                        set_level(10);
-                        s.pop_layer();
-                    })
-                    .title("Select a Level | ESC to close"),
-                )
-                .on_event(Event::Key(Key::Esc), |s| {
-                    s.pop_layer();
-                }),
-            );
-            s.call_on_name(KEY_TO_CURRENT_LEVEL_VIEW, move |t: &mut TextView| {
-                t.set_content(format!(
-                    "Current level: {}",
-                    starting_current_level.unwrap()
-                ));
-            });
-        });
-        let toggle_ghost_piece_button = Button::new("Toggle Ghost Piece", |s| {
-            // toggle
-            set_ghost_piece_on(!get_ghost_piece_on());
-            // str displaying toggled value
-            let ghost_piece_str: String = match get_ghost_piece_on() {
-                true => "Ghost Piece Enabled.".to_string(),
-                false => "Ghost Piece Disabled.".to_string(),
-            };
-            s.add_layer(Dialog::around(TextView::new(ghost_piece_str)).dismiss_button("Close"));
-        });
-        s.add_layer(
-            OnEventView::new(
-                Dialog::around(
-                    LinearLayout::vertical()
-                        .child(DummyView)
-                        .child(
-                            LinearLayout::horizontal()
-                                .child(starting_level_button)
-                                .child(
-                                    TextView::new(String::from(" ") + &get_level().to_string())
-                                        .with_name(ids::STARTING_LEVEL_PREVIEW),
-                                ),
-                        )
-                        .child(toggle_ghost_piece_button)
-                        .child(TextView::new("")), // TODO add preview logic for ghost piece
-                                                   // setting
-                )
-                .button("Cancel", |s| {
-                    s.pop_layer();
-                })
-                .title("Settings"),
-            )
-            .on_event(Event::Refresh, |s| {
-                s.call_on_name(ids::STARTING_LEVEL_PREVIEW, |t: &mut TextView| {
-                    t.set_content(String::from(" ") + &get_level().to_string());
-                });
-            }),
-        );
-    });
-
+    let settings_button = get_settings_button();
     // settings holder
     let starting_score_container =
         HideableView::new(TextView::new("1").with_name(ids::STARTING_LEVEL)).hidden();
@@ -266,6 +139,7 @@ fn play(siv: &mut Cursive) {
     let settings = BoardSettings {
         starting_level: get_level(),
         ghost_piece_on: get_ghost_piece_on(),
+        high_score: get_high_score(),
     };
     let board = Board::new(settings);
     siv.add_layer(
@@ -338,6 +212,106 @@ fn get_quit_button() -> Button {
                     s.pop_layer();
                 })
                 .title("Confirm Quit"),
+        );
+    })
+}
+
+fn get_ghost_piece_string() -> String {
+    match get_ghost_piece_on() {
+        true => "   On".to_string(),
+        false => "  Off".to_string(),
+    }
+}
+
+pub fn get_settings_button() -> Button {
+    Button::new("Settings", move |s| {
+        let starting_level_button = Button::new("Change Starting Level", |s| {
+            s.add_layer(
+                // this is ugly, try to refactor
+                OnEventView::new(
+                    Dialog::around(TextView::new("Make selection:").center())
+                        .button("1", |s| {
+                            set_level(1);
+                            s.pop_layer();
+                        })
+                        .button("2", |s| {
+                            set_level(2);
+                            s.pop_layer();
+                        })
+                        .button("3", |s| {
+                            set_level(3);
+                            s.pop_layer();
+                        })
+                        .button("4", |s| {
+                            set_level(4);
+                            s.pop_layer();
+                        })
+                        .button("5", |s| {
+                            set_level(5);
+                            s.pop_layer();
+                        })
+                        .button("6", |s| {
+                            set_level(6);
+                            s.pop_layer();
+                        })
+                        .button("7", |s| {
+                            set_level(7);
+                            s.pop_layer();
+                        })
+                        .button("8", |s| {
+                            set_level(8);
+                            s.pop_layer();
+                        })
+                        .button("9", |s| {
+                            set_level(9);
+                            s.pop_layer();
+                        })
+                        .title("Select a Level | ESC to close"),
+                )
+                .on_event(Event::Key(Key::Esc), |s| {
+                    s.pop_layer();
+                }),
+            );
+        });
+        let toggle_ghost_piece_button = Button::new("Toggle Ghost Piece", |_s| {
+            // toggle
+            set_ghost_piece_on(!get_ghost_piece_on());
+        });
+        s.add_layer(
+            OnEventView::new(
+                Dialog::around(
+                    LinearLayout::vertical()
+                        .child(DummyView)
+                        .child(
+                            LinearLayout::horizontal()
+                                .child(starting_level_button)
+                                .child(
+                                    TextView::new(String::from(" ") + &get_level().to_string())
+                                        .with_name(ids::STARTING_LEVEL_PREVIEW),
+                                ),
+                        )
+                        .child(
+                            LinearLayout::horizontal()
+                                .child(toggle_ghost_piece_button)
+                                .child(
+                                    TextView::new(get_ghost_piece_string())
+                                        .with_name(ids::GHOST_PIECE),
+                                ),
+                        ),
+                )
+                .button("Cancel", |s| {
+                    s.pop_layer();
+                })
+                .title("Settings"),
+            )
+            .on_event(Event::Refresh, |s| {
+                s.call_on_name(ids::STARTING_LEVEL_PREVIEW, |t: &mut TextView| {
+                    t.set_content(String::from(" ") + &get_level().to_string());
+                });
+                s.call_on_name(ids::GHOST_PIECE, |t: &mut TextView| {
+                    t.set_content(get_ghost_piece_string());
+                });
+            }),
         );
     })
 }

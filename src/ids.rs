@@ -8,3 +8,4 @@ pub const STARTING_LEVEL: &str = "slevel";
 pub const STARTING_LEVEL_PREVIEW: &str = "slevelp";
 pub const NEXT_PIECE: &str = "npiece";
 pub const BOARD: &str = "board";
+pub const GHOST_PIECE: &str = "gp";

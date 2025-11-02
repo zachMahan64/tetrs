@@ -348,11 +348,12 @@ impl PieceView {
         let i = self.get_scale() * row;
         // constant 2 to account for characters inheritantly being narrow
         let j = self.get_scale() * col * 2;
+        const SMALL_SHIFT: usize = 2; // adjust for center alignment when small
         match self.large {
             false => {
                 // 2 chars wide, 1 char tall
                 for dx in 0..2 {
-                    Self::draw_tile_char(printer, tile, (j + dx, i));
+                    Self::draw_tile_char(printer, tile, (j + dx + SMALL_SHIFT, i));
                 }
             }
             true => {

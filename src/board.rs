@@ -95,6 +95,7 @@ enum TickState {
 pub struct BoardSettings {
     pub starting_level: u8,
     pub ghost_piece_on: bool,
+    pub high_score: u32,
 }
 
 impl Board {
@@ -116,11 +117,11 @@ impl Board {
             // stats
             score: 0,
             lines: 0,
+            // set up things dependent on settings
             level: settings.starting_level,
             starting_level: settings.starting_level,
-            high_score: 0,
-
-            // settings
+            high_score: settings.high_score,
+            // toggle-ables
             ghost_piece_on: settings.ghost_piece_on,
         };
         board.update_tick_time();
@@ -130,6 +131,7 @@ impl Board {
         BoardSettings {
             starting_level: self.starting_level,
             ghost_piece_on: self.ghost_piece_on,
+            high_score: self.high_score,
         }
     }
     fn restart(&mut self) {
@@ -140,6 +142,8 @@ impl Board {
             true => latest_score,
             false => old_high_score,
         };
+        // record high score
+        tetrs::set_high_score(self.high_score);
     }
     fn draw_tile(&self, printer: &Printer, tile: Tile, row: usize, col: usize) {
         let i = self.scale_mode.get_scale() * row;
