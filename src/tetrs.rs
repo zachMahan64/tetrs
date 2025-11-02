@@ -208,26 +208,30 @@ fn play(siv: &mut Cursive) {
     );
     let action_bubble =
         Dialog::around(TextView::new("...").center().with_name(ids::ACTION)).title("Last Action");
-    let side_stack = Dialog::around(
+    let right_stack = Dialog::around(
         LinearLayout::vertical()
             .child(score_view)
-            .child(DummyView::new())
-            .child(action_bubble)
             .child(DummyView::new())
             .child(Dialog::around(PieceView::new().with_name(ids::NEXT_PIECE)).title("Next Piece"))
             .child(width_padding),
     )
     .title("ESC to pause")
     .title_position(cursive::align::HAlign::Center);
-    let board = Board::new(get_level());
 
+    let left_stack = LinearLayout::vertical()
+        .child(action_bubble)
+        .child(PaddedView::lrtb(8, 9, 0, 0, DummyView::new()));
+
+    let board = Board::new(get_level());
     siv.add_layer(
         OnEventView::new(
             Dialog::around(
                 LinearLayout::horizontal()
-                    .child(board.with_name("board"))
+                    .child(left_stack)
                     .child(DummyView::new())
-                    .child(side_stack),
+                    .child(board.with_name(ids::BOARD))
+                    .child(DummyView::new())
+                    .child(right_stack),
             )
             .title("Tetrs"),
         )

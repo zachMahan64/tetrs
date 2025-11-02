@@ -6,3 +6,4 @@ pub const LEVEL: &str = "level";
 pub const LINES: &str = "lines";
 pub const STARTING_LEVEL: &str = "slevel";
 pub const NEXT_PIECE: &str = "npiece";
+pub const BOARD: &str = "board";
