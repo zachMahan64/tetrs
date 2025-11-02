@@ -164,25 +164,36 @@ pub fn show_title_menu(s: &mut Cursive) {
                 true => "Ghost Piece Enabled.".to_string(),
                 false => "Ghost Piece Disabled.".to_string(),
             };
-            s.add_layer(Dialog::around(TextView::new(ghost_piece_str)));
+            s.add_layer(Dialog::around(TextView::new(ghost_piece_str)).dismiss_button("Close"));
         });
-        s.add_layer(OnEventView::new(
-            Dialog::around(
-                LinearLayout::vertical()
-                    .child(DummyView)
-                    .child(
-                        LinearLayout::horizontal()
-                            .child(starting_level_button)
-                            // TODO add a callback to change this
-                            .child(TextView::new(get_level().to_string())),
-                    )
-                    .child(toggle_ghost_piece_button),
+        s.add_layer(
+            OnEventView::new(
+                Dialog::around(
+                    LinearLayout::vertical()
+                        .child(DummyView)
+                        .child(
+                            LinearLayout::horizontal()
+                                .child(starting_level_button)
+                                .child(
+                                    TextView::new(String::from(" ") + &get_level().to_string())
+                                        .with_name(ids::STARTING_LEVEL_PREVIEW),
+                                ),
+                        )
+                        .child(toggle_ghost_piece_button)
+                        .child(TextView::new("")), // TODO add preview logic for ghost piece
+                                                   // setting
+                )
+                .button("Cancel", |s| {
+                    s.pop_layer();
+                })
+                .title("Settings"),
             )
-            .button("Cancel", |s| {
-                s.pop_layer();
-            })
-            .title("Settings"),
-        ));
+            .on_event(Event::Refresh, |s| {
+                s.call_on_name(ids::STARTING_LEVEL_PREVIEW, |t: &mut TextView| {
+                    t.set_content(String::from(" ") + &get_level().to_string());
+                });
+            }),
+        );
     });
 
     // settings holder
@@ -254,7 +265,7 @@ fn play(siv: &mut Cursive) {
 
     let settings = BoardSettings {
         starting_level: get_level(),
-        ghost_piece_on: true,
+        ghost_piece_on: get_ghost_piece_on(),
     };
     let board = Board::new(settings);
     siv.add_layer(
