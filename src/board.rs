@@ -508,6 +508,10 @@ impl Board {
                 });
                 s.call_on_name(ids::HELD_PIECE, |n: &mut PieceView| {
                     n.set_piece_optional(held_piece);
+                    match scale {
+                        ScaleMode::TooSmall | ScaleMode::Small => n.set_scale(false),
+                        ScaleMode::Large => n.set_scale(true),
+                    }
                 });
             }),
             true => EventResult::with_cb(move |s| {
@@ -521,6 +525,10 @@ impl Board {
 
                 s.call_on_name(ids::HELD_PIECE, |n: &mut PieceView| {
                     n.set_piece_optional(held_piece);
+                    match scale {
+                        ScaleMode::TooSmall | ScaleMode::Small => n.set_scale(false),
+                        ScaleMode::Large => n.set_scale(true),
+                    }
                 });
 
                 s.call_on_name(ids::LEVEL, |t: &mut TextView| {
