@@ -2,9 +2,11 @@ use crate::ids;
 use crate::piece::Piece;
 use crate::piece::PieceView;
 use crate::tetrs;
+use crate::tetrs::get_starting_level;
 use crate::text_art::BLOCK_CHAR;
 use crate::tile::Block;
 use crate::tile::Tile;
+use cursive::Cursive;
 use cursive::Printer;
 use cursive::View;
 use cursive::direction::Direction;
@@ -15,8 +17,11 @@ use cursive::theme::BaseColor;
 use cursive::theme::Color;
 use cursive::view::CannotFocus;
 use cursive::view::Margins;
+use cursive::views::Button;
 use cursive::views::Dialog;
 use cursive::views::DummyView;
+use cursive::views::LinearLayout;
+use cursive::views::OnEventView;
 use cursive::views::PaddedView;
 use cursive::views::TextView;
 use std::cmp::min;
@@ -79,6 +84,9 @@ pub struct Board {
 
     // settable settings,
     ghost_piece_on: bool,
+
+    // syncing settings
+    settings_synced: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -123,10 +131,17 @@ impl Board {
             high_score: settings.high_score,
             // toggle-ables
             ghost_piece_on: settings.ghost_piece_on,
+            settings_synced: false,
         };
         board.update_tick_time();
         board
     }
+    // to be called only once when setting up the board afet a restart
+    pub fn reset_starting_and_current_level(&mut self, lvl: u8) {
+        self.starting_level = lvl;
+        self.level = lvl;
+    }
+    // get current settings, useful for preserve settings when reseting the board
     pub fn get_settings(&self) -> BoardSettings {
         BoardSettings {
             starting_level: self.starting_level,
@@ -134,6 +149,7 @@ impl Board {
             high_score: self.high_score,
         }
     }
+    // logically restart the board/game
     fn restart(&mut self) {
         let old_high_score = self.high_score;
         let latest_score = self.score;
@@ -145,6 +161,7 @@ impl Board {
         // record high score
         tetrs::set_high_score(self.high_score);
     }
+    // draw a tile of the board (scaled)
     fn draw_tile(&self, printer: &Printer, tile: Tile, row: usize, col: usize) {
         let i = self.scale_mode.get_scale() * row;
         // constant 2 to account for characters inheritantly being narrow
@@ -167,7 +184,7 @@ impl Board {
             }
         }
     }
-    // helper
+    // draw a char that comprises a piece of a scaled tile
     fn draw_tile_char(printer: &Printer, tile: Option<Block>, coord: (usize, usize)) {
         match tile {
             Some(block) => printer.with_style(block.get_color(), |p| p.print(coord, BLOCK_CHAR)),
@@ -176,7 +193,7 @@ impl Board {
             }),
         }
     }
-
+    // main event-handler, dispatches refresh logic to on_refresh
     fn handle_event(&mut self, event: Event) -> EventResult {
         match event {
             // refresh handles gravity logic
@@ -246,6 +263,8 @@ impl Board {
         }
     }
 
+    // when a tick has passed, this will move down the current piece and consume it if it is
+    // obstructed
     fn check_to_tick_down_piece(&mut self) -> TickState {
         let now = Instant::now();
         if now < self.last_tick + self.tick_time {
@@ -277,6 +296,7 @@ impl Board {
                 self.tiles[y as usize][x as usize] = piece_tile;
             }
         }
+        // book keeping and handle transition to next piece
         self.current_piece = self.next_piece;
         self.next_piece = Piece::random_new().at(PIECE_START_X, PIECE_START_Y);
         self.score += 1; // give pity point
@@ -325,7 +345,7 @@ impl Board {
             }
             i -= 1;
         }
-        self.award_points(num_cleared);
+        self.award_points_from_lines_cleared(num_cleared);
         self.lines += num_cleared as u32;
     }
     // helper for clear_any_full_lines
@@ -335,8 +355,8 @@ impl Board {
         }
         self.tiles[0] = [None; BOARD_WIDTH];
     }
-
-    fn award_points(&mut self, num_cleared: u8) {
+    // awards points based on lines clear
+    fn award_points_from_lines_cleared(&mut self, num_cleared: u8) {
         let mut points: u32 = match num_cleared {
             1 => 100,
             2 => 300,
@@ -347,6 +367,7 @@ impl Board {
         points = points * self.level as u32;
         self.score += points;
     }
+    // handle the case when the board is refreshing and a tick has elapsed
     fn handle_tick(&mut self) -> EventResult {
         if self.needs_relayout {
             self.needs_relayout = false; //reset 
@@ -373,22 +394,40 @@ impl Board {
                         false => "Game Over!",
                     };
                     s.add_layer(
-                        Dialog::around(
-                            TextView::new(format!(
-                                "Score: {}\nLines: {} \nLevel: {}",
-                                score, lines, level
-                            ))
-                            .center(),
+                        OnEventView::new(
+                            Dialog::around(
+                                LinearLayout::vertical()
+                                    .child(
+                                        Dialog::around(
+                                            TextView::new(format!(
+                                                "Score: {}\nLines: {} \nLevel: {}",
+                                                score, lines, level
+                                            ))
+                                            .center(),
+                                        )
+                                        .title("Stats"),
+                                    )
+                                    .child(Button::new("Play Again", |s| {
+                                        s.pop_layer();
+                                    }))
+                                    .child(tetrs::get_settings_button())
+                                    .child(Button::new("Return to Title", |s| {
+                                        s.pop_layer();
+                                        s.pop_layer();
+                                        tetrs::show_title_menu(s);
+                                    })),
+                            )
+                            .title(game_over_title),
                         )
-                        .title(game_over_title)
-                        .button("Play Again", |s| {
-                            s.pop_layer();
-                        })
-                        .button("Return to Title", |s| {
-                            s.pop_layer();
-                            s.pop_layer();
-                            tetrs::show_title_menu(s);
-                        }),
+                        .on_event(
+                            // TODO remove?
+                            Event::Key(Key::Enter),
+                            |s: &mut Cursive| {
+                                s.call_on_name(ids::BOARD, |b: &mut Board| {
+                                    b.reset_starting_and_current_level(get_starting_level());
+                                });
+                            },
+                        ),
                     );
                 }
             }
@@ -416,18 +455,55 @@ impl Board {
             });
         })
     }
+    // handle the case when the board is refreshing but enough time for a tick has not elapsed
     fn handle_no_tick(&mut self) -> EventResult {
+        // ------------ STATIC LOGIC BLOCK ---------------------
+        // sync settings when needed
+        let do_update_from_settings = !self.settings_synced;
+
+        // UPDATE SYNCABLE SETTINS THAT NEED TO BE DISPLAYED HERE
+        let mut level = self.level;
+
+        if do_update_from_settings {
+            self.settings_synced = true;
+            self.reset_starting_and_current_level(tetrs::get_starting_level()); // synchronize
+            self.ghost_piece_on = tetrs::get_ghost_piece_on();
+            level = get_starting_level();
+        }
+
+        // -----------------------------------------------------
+
         let next_piece = self.next_piece;
         let scale = self.scale_mode;
-        EventResult::with_cb(move |s| {
-            s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
-                n.set_piece(next_piece);
-                match scale {
-                    ScaleMode::TooSmall | ScaleMode::Small => n.set_scale(false),
-                    ScaleMode::Large => n.set_scale(true),
-                }
-            });
-        })
+        match do_update_from_settings {
+            false => EventResult::with_cb(move |s| {
+                s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
+                    n.set_piece(next_piece);
+                    match scale {
+                        ScaleMode::TooSmall | ScaleMode::Small => n.set_scale(false),
+                        ScaleMode::Large => n.set_scale(true),
+                    }
+                });
+            }),
+            true => EventResult::with_cb(move |s| {
+                s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
+                    n.set_piece(next_piece);
+                    match scale {
+                        ScaleMode::TooSmall | ScaleMode::Small => n.set_scale(false),
+                        ScaleMode::Large => n.set_scale(true),
+                    }
+                });
+                // SYNC LEVEL:
+                /*
+                s.call_on_name(ids::BOARD, |b: &mut Board| {
+                    b.reset_starting_and_current_level(get_starting_level());
+                });
+                */
+                s.call_on_name(ids::LEVEL, |t: &mut TextView| {
+                    t.set_content(format!("{}", level));
+                });
+            }),
+        }
     }
     fn try_current_piece_movement<F>(&mut self, mut f: F) -> bool
     where

@@ -23,7 +23,7 @@ use std::sync::atomic::{AtomicU8, AtomicU32, Ordering};
 static LEVEL: AtomicU8 = AtomicU8::new(1);
 static GHOST_PIECE_ON: AtomicBool = AtomicBool::new(true);
 static HIGH_SCORE: AtomicU32 = AtomicU32::new(0);
-pub fn get_level() -> u8 {
+pub fn get_starting_level() -> u8 {
     LEVEL.load(Ordering::Relaxed)
 }
 
@@ -137,7 +137,7 @@ fn play(siv: &mut Cursive) {
         .child(PaddedView::lrtb(8, 8, 0, 0, DummyView::new()));
 
     let settings = BoardSettings {
-        starting_level: get_level(),
+        starting_level: get_starting_level(),
         ghost_piece_on: get_ghost_piece_on(),
         high_score: get_high_score(),
     };
@@ -286,8 +286,10 @@ pub fn get_settings_button() -> Button {
                             LinearLayout::horizontal()
                                 .child(starting_level_button)
                                 .child(
-                                    TextView::new(String::from(" ") + &get_level().to_string())
-                                        .with_name(ids::STARTING_LEVEL_PREVIEW),
+                                    TextView::new(
+                                        String::from(" ") + &get_starting_level().to_string(),
+                                    )
+                                    .with_name(ids::STARTING_LEVEL_PREVIEW),
                                 ),
                         )
                         .child(
@@ -299,18 +301,19 @@ pub fn get_settings_button() -> Button {
                                 ),
                         ),
                 )
-                .button("Cancel", |s| {
-                    s.pop_layer();
-                })
+                .dismiss_button("Close")
                 .title("Settings"),
             )
             .on_event(Event::Refresh, |s| {
                 s.call_on_name(ids::STARTING_LEVEL_PREVIEW, |t: &mut TextView| {
-                    t.set_content(String::from(" ") + &get_level().to_string());
+                    t.set_content(String::from(" ") + &get_starting_level().to_string());
                 });
                 s.call_on_name(ids::GHOST_PIECE, |t: &mut TextView| {
                     t.set_content(get_ghost_piece_string());
                 });
+            })
+            .on_event(Event::Key(Key::Esc), |s| {
+                s.pop_layer();
             }),
         );
     })
