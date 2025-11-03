@@ -129,12 +129,12 @@ fn play(siv: &mut Cursive) {
             .child(Dialog::around(PieceView::new().with_name(ids::NEXT_PIECE)).title("Next Piece"))
             .child(width_padding),
     )
-    .title("Pause | Esc ")
+    .title("Pause | [esc] ")
     .title_position(cursive::align::HAlign::Center);
 
     let left_stack = Dialog::around(
         LinearLayout::vertical()
-            .child(Dialog::around(PieceView::new().with_name(ids::HELD_PIECE)).title("Hold | C"))
+            .child(Dialog::around(PieceView::new().with_name(ids::HELD_PIECE)).title("Hold | [c]"))
             .child(PaddedView::lrtb(8, 8, 0, 0, DummyView::new()))
             .child(action_bubble),
     );
@@ -195,9 +195,9 @@ fn controls_menu_popup(s: &mut Cursive) {
   <- / ->  | move piece left / right 
  up arrow  | instantly drop piece 
 down arrow | fast fall piece
-     Z     | rotate piece left 
-     X     | rotate piece right 
-     C     | hold
+     c     | rotate piece left 
+     x     | rotate piece right 
+     c     | hold
 "#,
         ))
         .dismiss_button("Close")

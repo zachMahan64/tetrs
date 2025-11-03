@@ -486,6 +486,7 @@ impl Board {
         if do_update_from_settings {
             self.settings_synced = true;
             self.reset_starting_and_current_level(tetrs::get_starting_level()); // synchronize
+            self.update_tick_time(); // make sure tick time/gravity is set accordingly
             self.ghost_piece_on = tetrs::get_ghost_piece_on();
             level = get_starting_level();
         }
