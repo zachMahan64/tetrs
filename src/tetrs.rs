@@ -129,12 +129,15 @@ fn play(siv: &mut Cursive) {
             .child(Dialog::around(PieceView::new().with_name(ids::NEXT_PIECE)).title("Next Piece"))
             .child(width_padding),
     )
-    .title("ESC to pause")
+    .title("Pause | Esc ")
     .title_position(cursive::align::HAlign::Center);
 
-    let left_stack = LinearLayout::vertical()
-        .child(action_bubble)
-        .child(PaddedView::lrtb(8, 8, 0, 0, DummyView::new()));
+    let left_stack = Dialog::around(
+        LinearLayout::vertical()
+            .child(Dialog::around(PieceView::new().with_name(ids::HELD_PIECE)).title("Hold | C"))
+            .child(PaddedView::lrtb(8, 8, 0, 0, DummyView::new()))
+            .child(action_bubble),
+    );
 
     let settings = BoardSettings {
         starting_level: get_starting_level(),

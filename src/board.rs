@@ -72,6 +72,9 @@ pub struct Board {
     // piece things
     current_piece: Piece,
     next_piece: Piece,
+    held_piece: Option<Piece>,
+    can_hold: bool,
+
     last_tick: time::Instant,
     tick_time: time::Duration, // make this vary by level/difficulty
 
@@ -119,6 +122,8 @@ impl Board {
             // TODO impl proper piece spawning, maybe add a "bag feature"
             current_piece: Piece::random_new().at(PIECE_START_X, PIECE_START_Y),
             next_piece: Piece::random_new().at(PIECE_START_X, PIECE_START_Y),
+            held_piece: None,
+            can_hold: true,
             last_tick: time::Instant::now(),
             tick_time: time::Duration::from_millis(STARTING_TICK_TIME_MILLIS),
 
@@ -250,6 +255,14 @@ impl Board {
                     });
                 })
             }
+            Event::Char('c') => {
+                self.try_hold_piece();
+                EventResult::with_cb(|s| {
+                    s.call_on_name(ids::ACTION, |t: &mut TextView| {
+                        t.set_content("Hold!");
+                    });
+                })
+            }
             _ => EventResult::Ignored,
         }
     }
@@ -296,6 +309,8 @@ impl Board {
                 self.tiles[y as usize][x as usize] = piece_tile;
             }
         }
+        // let us hold again since we just consumed a piece
+        self.can_hold = true;
         // book keeping and handle transition to next piece
         self.current_piece = self.next_piece;
         self.next_piece = Piece::random_new().at(PIECE_START_X, PIECE_START_Y);
@@ -378,7 +393,8 @@ impl Board {
         let lines = self.lines;
         let high_score = self.high_score;
         let loss_state = self.loss_state;
-        let next_piece = self.next_piece.clone();
+        let next_piece = self.next_piece;
+        let held_piece = self.held_piece;
 
         match loss_state {
             LossState::NotLost => {}
@@ -435,6 +451,9 @@ impl Board {
             s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
                 n.set_piece(next_piece);
             });
+            s.call_on_name(ids::HELD_PIECE, |n: &mut PieceView| {
+                n.set_piece_optional(held_piece);
+            });
 
             s.call_on_name(ids::PADDED, |t: &mut PaddedView<DummyView>| {
                 t.set_margins(margins);
@@ -470,11 +489,13 @@ impl Board {
             self.ghost_piece_on = tetrs::get_ghost_piece_on();
             level = get_starting_level();
         }
+        // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-        // -----------------------------------------------------
-
+        // we need to update these every frame for a sufficiently responsive UI ~~~
         let next_piece = self.next_piece;
+        let held_piece = self.held_piece;
         let scale = self.scale_mode;
+        // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         match do_update_from_settings {
             false => EventResult::with_cb(move |s| {
                 s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
@@ -483,6 +504,9 @@ impl Board {
                         ScaleMode::TooSmall | ScaleMode::Small => n.set_scale(false),
                         ScaleMode::Large => n.set_scale(true),
                     }
+                });
+                s.call_on_name(ids::HELD_PIECE, |n: &mut PieceView| {
+                    n.set_piece_optional(held_piece);
                 });
             }),
             true => EventResult::with_cb(move |s| {
@@ -493,12 +517,11 @@ impl Board {
                         ScaleMode::Large => n.set_scale(true),
                     }
                 });
-                // SYNC LEVEL:
-                /*
-                s.call_on_name(ids::BOARD, |b: &mut Board| {
-                    b.reset_starting_and_current_level(get_starting_level());
+
+                s.call_on_name(ids::HELD_PIECE, |n: &mut PieceView| {
+                    n.set_piece_optional(held_piece);
                 });
-                */
+
                 s.call_on_name(ids::LEVEL, |t: &mut TextView| {
                     t.set_content(format!("{}", level));
                 });
@@ -563,6 +586,26 @@ impl Board {
             }
         }
         false
+    }
+    fn try_hold_piece(&mut self) {
+        if !self.can_hold {
+            return;
+        }
+        let orig_held_piece = self.held_piece;
+        // construct new piece to get orginal, non-rotated layout
+        // also go remember to set starting coords for it with `at`
+        self.held_piece =
+            Some(Piece::new(self.current_piece.piece_type()).at(PIECE_START_X, PIECE_START_Y));
+        match orig_held_piece {
+            None => {
+                self.current_piece = self.next_piece;
+                self.next_piece = Piece::random_new().at(PIECE_START_X, PIECE_START_Y);
+            }
+            Some(p) => {
+                self.current_piece = p;
+            }
+        }
+        self.can_hold = false; // just held, this has to get reset when we consume the next piece
     }
 }
 
