@@ -382,18 +382,9 @@ const PIECEVIEW_WIDTH: usize = 4;
 const PIECEVIEW_HEIGHT: usize = 2;
 
 impl View for PieceView {
-    fn required_size(&mut self, constraint: cursive::XY<usize>) -> cursive::XY<usize> {
-        let large_x = PIECEVIEW_WIDTH * 2 * 2;
-        let large_y = PIECEVIEW_HEIGHT * 2;
-
-        // updates scale through the large flag
-        /*
-        if large_x > constraint.pair().0 || large_y > constraint.pair().1 {
-            self.large = false;
-        } else {
-            self.large = true;
-        }
-        */
+    fn required_size(&mut self, _constraint: cursive::XY<usize>) -> cursive::XY<usize> {
+        // scale should be externally managed by the owning view by passing in a bool for large as
+        // true/false
         let dimen_x = PIECEVIEW_WIDTH * 2 * self.get_scale();
         let dimen_y = PIECEVIEW_HEIGHT * self.get_scale();
         (dimen_x, dimen_y).into()
