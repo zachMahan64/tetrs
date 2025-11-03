@@ -6,6 +6,7 @@
 - Persisent highscore, at least program duration (ideally file, decide where) and advanced stats?
 - Highscore w/ names + leaderboard
 - Music w/ rodio (toggle-able)
+- spruce up README, add a license, and add fields to Cargo.toml -> make crates acc -> publish
 #### Extra
 - VFX (like cool graphic on a tetrs)
 - SFX (like satisfying sounds on line clears/tetrs)
