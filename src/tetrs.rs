@@ -75,6 +75,9 @@ pub fn show_title_menu(s: &mut Cursive) {
 
     let buttons = LinearLayout::vertical()
         .child(Button::new("Play", &play))
+        .child(Button::new("Controls", |s| {
+            controls_menu_popup(s);
+        }))
         .child(settings_button)
         .child(get_quit_button());
     let title_view = OnEventView::new(
@@ -195,7 +198,7 @@ fn controls_menu_popup(s: &mut Cursive) {
   <- / ->  | move piece left / right 
  up arrow  | instantly drop piece 
 down arrow | fast fall piece
-     c     | rotate piece left 
+     z     | rotate piece left 
      x     | rotate piece right 
      c     | hold
 "#,
