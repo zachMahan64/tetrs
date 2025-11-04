@@ -412,3 +412,32 @@ impl View for PieceView {
         }
     }
 }
+
+const PIECE_BAG_SIZE: usize = 7;
+pub struct PieceBag {
+    pieces: [Piece; PIECE_BAG_SIZE],
+    curr: usize,
+}
+
+impl PieceBag {
+    pub fn new() -> Self {
+        PieceBag {
+            pieces: [Piece::random_new(); 7],
+            curr: 0,
+        }
+    }
+    #[inline]
+    pub fn pop(&mut self) -> Piece {
+        let piece = self.pieces[self.curr];
+        self.pieces[self.curr] = Piece::random_new();
+        self.curr = (self.curr + 1) % PIECE_BAG_SIZE;
+        piece
+    }
+
+    #[inline]
+    pub fn get(&self, idx: usize) -> Piece {
+        assert!(idx < PIECE_BAG_SIZE);
+        let true_pos = (self.curr + idx) % PIECE_BAG_SIZE;
+        self.pieces[true_pos]
+    }
+}
