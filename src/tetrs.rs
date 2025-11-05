@@ -125,7 +125,6 @@ fn play(siv: &mut Cursive) {
     let right_stack = Dialog::around(
         LinearLayout::vertical()
             .child(score_view)
-            .child(DummyView::new())
             .child(Dialog::around(PieceView::new().with_name(ids::NEXT_PIECE)).title("Next Piece"))
             .child(
                 HideableView::new(

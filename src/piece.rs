@@ -422,14 +422,15 @@ pub struct PieceBag {
 impl PieceBag {
     pub fn new() -> Self {
         PieceBag {
-            pieces: [(); PIECE_BAG_SIZE].map(|_| Piece::random_new()),
+            pieces: [(); PIECE_BAG_SIZE]
+                .map(|_| Piece::random_new().at(board::PIECE_START_X, board::PIECE_START_Y)),
             curr: 0,
         }
     }
     #[inline]
     pub fn pop(&mut self) -> Piece {
         let piece = self.pieces[self.curr];
-        self.pieces[self.curr] = Piece::random_new();
+        self.pieces[self.curr] = Piece::random_new().at(board::PIECE_START_X, board::PIECE_START_Y);
         self.curr = (self.curr + 1) % PIECE_BAG_SIZE;
         piece
     }
