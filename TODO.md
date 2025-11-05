@@ -1,6 +1,12 @@
 ### To-Do list
 #### Core
-- Advanced stats (live) -> inputs per second (average overall and last ~3 seconds), piece by piece?
+- Advanced stats (live) -> 
+    - inputs per second (average overall and last ~3 seconds)
+    - Elapsed time 
+    - Tetris rate
+    - Tetrises 
+    - Triples 
+    - Doubles
 - Persisent highscore, at least program duration (ideally file, decide where) and advanced stats?
 - Highscore w/ names + leaderboard
 - Music w/ rodio (toggle-able)
