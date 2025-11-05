@@ -422,7 +422,7 @@ pub struct PieceBag {
 impl PieceBag {
     pub fn new() -> Self {
         PieceBag {
-            pieces: [Piece::random_new(); 7],
+            pieces: [(); PIECE_BAG_SIZE].map(|_| Piece::random_new()),
             curr: 0,
         }
     }

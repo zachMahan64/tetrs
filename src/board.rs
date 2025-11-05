@@ -1,5 +1,6 @@
 use crate::ids;
 use crate::piece::Piece;
+use crate::piece::PieceBag;
 use crate::piece::PieceView;
 use crate::tetrs;
 use crate::tetrs::get_starting_level;
@@ -20,6 +21,7 @@ use cursive::view::Margins;
 use cursive::views::Button;
 use cursive::views::Dialog;
 use cursive::views::DummyView;
+use cursive::views::HideableView;
 use cursive::views::LinearLayout;
 use cursive::views::OnEventView;
 use cursive::views::PaddedView;
@@ -53,13 +55,6 @@ impl ScaleMode {
     fn default() -> Self {
         Self::Small
     }
-    // useless currently, but could be useful
-    fn get_right_stack_margins(&self) -> Margins {
-        match self {
-            Self::Small | Self::TooSmall => Margins::lrtb(8, 8, 0, 0),
-            ScaleMode::Large => Margins::lrtb(8, 8, 0, 0),
-        }
-    }
 }
 
 pub struct Board {
@@ -71,7 +66,7 @@ pub struct Board {
 
     // piece things
     current_piece: Piece,
-    next_piece: Piece,
+    piece_bag: PieceBag,
     held_piece: Option<Piece>,
     can_hold: bool,
 
@@ -121,7 +116,7 @@ impl Board {
 
             // TODO impl proper piece spawning, maybe add a "bag feature"
             current_piece: Piece::random_new().at(PIECE_START_X, PIECE_START_Y),
-            next_piece: Piece::random_new().at(PIECE_START_X, PIECE_START_Y),
+            piece_bag: PieceBag::new(),
             held_piece: None,
             can_hold: true,
             last_tick: time::Instant::now(),
@@ -312,8 +307,7 @@ impl Board {
         // let us hold again since we just consumed a piece
         self.can_hold = true;
         // book keeping and handle transition to next piece
-        self.current_piece = self.next_piece;
-        self.next_piece = Piece::random_new().at(PIECE_START_X, PIECE_START_Y);
+        self.current_piece = self.piece_bag.pop();
         self.score += 1; // give pity point
         // check to clear any lines that are now full after consuming a piece
         self.clear_any_full_lines();
@@ -387,13 +381,17 @@ impl Board {
         if self.needs_relayout {
             self.needs_relayout = false; //reset 
         }
-        let margins = self.scale_mode.get_right_stack_margins();
         let score = self.score;
         let level = self.level;
         let lines = self.lines;
         let high_score = self.high_score;
         let loss_state = self.loss_state;
-        let next_piece = self.next_piece;
+
+        let next_piece = self.piece_bag.get(0);
+        let piece_in_2 = self.piece_bag.get(1);
+        let piece_in_3 = self.piece_bag.get(2);
+        let piece_in_4 = self.piece_bag.get(3);
+
         let held_piece = self.held_piece;
 
         match loss_state {
@@ -448,15 +446,23 @@ impl Board {
                 }
             }
 
+            // next pieces
             s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
                 n.set_piece(next_piece);
             });
-            s.call_on_name(ids::HELD_PIECE, |n: &mut PieceView| {
-                n.set_piece_optional(held_piece);
+            s.call_on_name(ids::PIECE_IN_2, |n: &mut PieceView| {
+                n.set_piece(piece_in_2);
+            });
+            s.call_on_name(ids::PIECE_IN_3, |n: &mut PieceView| {
+                n.set_piece(piece_in_3);
+            });
+            s.call_on_name(ids::PIECE_IN_4, |n: &mut PieceView| {
+                n.set_piece(piece_in_4);
             });
 
-            s.call_on_name(ids::PADDED, |t: &mut PaddedView<DummyView>| {
-                t.set_margins(margins);
+            // held piece
+            s.call_on_name(ids::HELD_PIECE, |n: &mut PieceView| {
+                n.set_piece_optional(held_piece);
             });
 
             s.call_on_name(ids::SCORE, |t: &mut TextView| {
@@ -493,7 +499,10 @@ impl Board {
         // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
         // we need to update these every frame for a sufficiently responsive UI ~~~
-        let next_piece = self.next_piece;
+        let next_piece = self.piece_bag.get(0);
+        let piece_in_2 = self.piece_bag.get(1);
+        let piece_in_3 = self.piece_bag.get(2);
+        let piece_in_4 = self.piece_bag.get(3);
         let held_piece = self.held_piece;
         let scale = self.scale_mode;
         // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -513,6 +522,39 @@ impl Board {
                         ScaleMode::Large => n.set_scale(true),
                     }
                 });
+                s.call_on_name(ids::PIECE_IN_2, |n: &mut PieceView| {
+                    n.set_piece(piece_in_2);
+                    match scale {
+                        ScaleMode::TooSmall | ScaleMode::Small => n.set_scale(false),
+                        ScaleMode::Large => n.set_scale(true),
+                    }
+                });
+                match scale {
+                    ScaleMode::Large => {
+                        s.call_on_name(ids::PIECE_IN_3, |n: &mut PieceView| {
+                            n.set_piece(piece_in_3);
+                            n.set_scale(true); // large, when visible
+                        });
+                        s.call_on_name(ids::PIECE_IN_4, |n: &mut PieceView| {
+                            n.set_piece(piece_in_4);
+                            n.set_scale(true); // large, when visible
+                        });
+                        s.call_on_name(ids::HIDE_IN_3, |h: &mut HideableView<Dialog>| {
+                            h.unhide();
+                        });
+                        s.call_on_name(ids::HIDE_IN_4, |h: &mut HideableView<Dialog>| {
+                            h.unhide();
+                        });
+                    }
+                    ScaleMode::TooSmall | ScaleMode::Small => {
+                        s.call_on_name(ids::HIDE_IN_3, |h: &mut HideableView<Dialog>| {
+                            h.hide();
+                        });
+                        s.call_on_name(ids::HIDE_IN_4, |h: &mut HideableView<Dialog>| {
+                            h.hide();
+                        });
+                    }
+                }
             }),
             true => EventResult::with_cb(move |s| {
                 s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
@@ -607,8 +649,7 @@ impl Board {
             Some(Piece::new(self.current_piece.piece_type()).at(PIECE_START_X, PIECE_START_Y));
         match orig_held_piece {
             None => {
-                self.current_piece = self.next_piece;
-                self.next_piece = Piece::random_new().at(PIECE_START_X, PIECE_START_Y);
+                self.current_piece = self.piece_bag.pop();
             }
             Some(p) => {
                 self.current_piece = p;

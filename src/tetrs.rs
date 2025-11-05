@@ -97,9 +97,6 @@ pub fn show_title_menu(s: &mut Cursive) {
 
 fn play(siv: &mut Cursive) {
     siv.pop_layer();
-    // widest element as a DummyView with padding,
-    let width_padding = PaddedView::lrtb(8, 8, 0, 0, DummyView).with_name(ids::PADDED);
-
     let high_score_label = TextView::new("High Score")
         .center()
         .style(Effect::Underline);
@@ -130,14 +127,31 @@ fn play(siv: &mut Cursive) {
             .child(score_view)
             .child(DummyView::new())
             .child(Dialog::around(PieceView::new().with_name(ids::NEXT_PIECE)).title("Next Piece"))
-            .child(width_padding),
+            .child(
+                HideableView::new(
+                    Dialog::around(PieceView::new().with_name(ids::PIECE_IN_2)).title("In 2"),
+                )
+                .with_name(ids::HIDE_IN_2),
+            )
+            .child(
+                HideableView::new(
+                    Dialog::around(PieceView::new().with_name(ids::PIECE_IN_3)).title("In 3"),
+                )
+                .with_name(ids::HIDE_IN_3),
+            )
+            .child(
+                HideableView::new(
+                    Dialog::around(PieceView::new().with_name(ids::PIECE_IN_4)).title("In 4"),
+                )
+                .with_name(ids::HIDE_IN_4),
+            ),
     )
-    .title("Pause | [esc] ")
+    .title(" menu [esc] ")
     .title_position(cursive::align::HAlign::Center);
 
     let left_stack = Dialog::around(
         LinearLayout::vertical()
-            .child(Dialog::around(PieceView::new().with_name(ids::HELD_PIECE)).title("Hold | [c]"))
+            .child(Dialog::around(PieceView::new().with_name(ids::HELD_PIECE)).title("hold [c]"))
             .child(PaddedView::lrtb(8, 8, 0, 0, DummyView::new()))
             .child(action_bubble),
     );
