@@ -148,11 +148,17 @@ fn play(siv: &mut Cursive) {
     .title(" menu [esc] ")
     .title_position(cursive::align::HAlign::Center);
 
+    let elapsed_view = LinearLayout::horizontal()
+        .child(TextView::new("Elapsed: "))
+        .child(TextView::new("00:00").with_name(ids::ELAPSED));
+
+    let stats_view = Dialog::around(LinearLayout::vertical().child(elapsed_view)).title("Stats");
+
     let left_stack = Dialog::around(
         LinearLayout::vertical()
             .child(Dialog::around(PieceView::new().with_name(ids::HELD_PIECE)).title("hold [c]"))
-            .child(PaddedView::lrtb(8, 8, 0, 0, DummyView::new()))
-            .child(action_bubble),
+            .child(action_bubble)
+            .child(stats_view),
     );
 
     let settings = BoardSettings {

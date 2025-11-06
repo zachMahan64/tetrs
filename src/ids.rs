@@ -14,7 +14,10 @@ pub const NEXT_PIECE: &str = "npiece";
 pub const PIECE_IN_2: &str = "2piece";
 pub const PIECE_IN_3: &str = "3piece";
 pub const PIECE_IN_4: &str = "4piece";
-
+// hideable views for pieces (for small screen mode)
 pub const HIDE_IN_2: &str = "h2";
 pub const HIDE_IN_3: &str = "h3";
 pub const HIDE_IN_4: &str = "h4";
+
+// stats
+pub const ELAPSED: &str = "elapsed";

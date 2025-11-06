@@ -17,14 +17,11 @@ use cursive::event::Key;
 use cursive::theme::BaseColor;
 use cursive::theme::Color;
 use cursive::view::CannotFocus;
-use cursive::view::Margins;
 use cursive::views::Button;
 use cursive::views::Dialog;
-use cursive::views::DummyView;
 use cursive::views::HideableView;
 use cursive::views::LinearLayout;
 use cursive::views::OnEventView;
-use cursive::views::PaddedView;
 use cursive::views::TextView;
 use std::cmp::min;
 use std::time;
@@ -70,10 +67,11 @@ pub struct Board {
     held_piece: Option<Piece>,
     can_hold: bool,
 
+    // ticking
     last_tick: time::Instant,
     tick_time: time::Duration, // make this vary by level/difficulty
 
-    //stats
+    //game stat
     score: u32,
     lines: u32,
     level: u8,
@@ -84,7 +82,10 @@ pub struct Board {
     ghost_piece_on: bool,
 
     // syncing settings
-    settings_synced: bool,
+    synced: bool,
+
+    // advanced/extra stats,
+    start_time: time::Instant, // for getting elapsed later
 }
 
 #[derive(Clone, Copy)]
@@ -114,7 +115,6 @@ impl Board {
             needs_relayout: false,
             loss_state: LossState::NotLost,
 
-            // TODO impl proper piece spawning, maybe add a "bag feature"
             current_piece: Piece::random_new().at(PIECE_START_X, PIECE_START_Y),
             piece_bag: PieceBag::new(),
             held_piece: None,
@@ -122,7 +122,7 @@ impl Board {
             last_tick: time::Instant::now(),
             tick_time: time::Duration::from_millis(STARTING_TICK_TIME_MILLIS),
 
-            // stats
+            // game state
             score: 0,
             lines: 0,
             // set up things dependent on settings
@@ -131,7 +131,9 @@ impl Board {
             high_score: settings.high_score,
             // toggle-ables
             ghost_piece_on: settings.ghost_piece_on,
-            settings_synced: false,
+            synced: false,
+            // advanced stats
+            start_time: Instant::now(), // needs to be reset when synced
         };
         board.update_tick_time();
         board
@@ -322,7 +324,7 @@ impl Board {
     }
     // helper
     fn update_tick_time(&mut self) {
-        const CURVE: u64 = 15; // to not be too hard
+        const CURVE: u64 = 15; // so it's not too hard
         let millis = match self.level {
             0 => 800,
             1 => 717,
@@ -338,7 +340,7 @@ impl Board {
             13..=15 => 67 + CURVE,
             16..=18 => 50 + CURVE,
             19..=28 => 33 + CURVE,
-            _ => 17,
+            _ => 17 + CURVE,
         };
         self.tick_time = std::time::Duration::from_millis(millis);
     }
@@ -484,17 +486,18 @@ impl Board {
     fn handle_no_tick(&mut self) -> EventResult {
         // ------------ STATIC LOGIC BLOCK ---------------------
         // sync settings when needed
-        let do_update_from_settings = !self.settings_synced;
+        let do_update_from_settings = !self.synced;
 
         // UPDATE SYNCABLE SETTINS THAT NEED TO BE DISPLAYED HERE
         let mut level = self.level;
 
         if do_update_from_settings {
-            self.settings_synced = true;
+            self.synced = true;
             self.reset_starting_and_current_level(tetrs::get_starting_level()); // synchronize
             self.update_tick_time(); // make sure tick time/gravity is set accordingly
             self.ghost_piece_on = tetrs::get_ghost_piece_on();
             level = get_starting_level();
+            self.start_time = time::Instant::now();
         }
         // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -505,9 +508,17 @@ impl Board {
         let piece_in_4 = self.piece_bag.get(3);
         let held_piece = self.held_piece;
         let scale = self.scale_mode;
+        let timer_string = self.get_elapsed_as_string();
         // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         match do_update_from_settings {
             false => EventResult::with_cb(move |s| {
+                // timer
+                let timer_string_clone = timer_string.clone();
+                // timer
+                s.call_on_name(ids::ELAPSED, |t: &mut TextView| {
+                    t.set_content(timer_string_clone);
+                });
+
                 s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
                     n.set_piece(next_piece);
                     match scale {
@@ -656,6 +667,28 @@ impl Board {
             }
         }
         self.can_hold = false; // just held, this has to get reset when we consume the next piece
+    }
+
+    // helper
+    fn calculate_elapsed_duration(&self) -> time::Duration {
+        time::Instant::now() - self.start_time
+    }
+
+    // gets a string holding elapsed time to easily display a timer for the game
+    fn get_elapsed_as_string(&self) -> String {
+        let total_seconds = self.calculate_elapsed_duration().as_secs();
+        let minutes = total_seconds / 60;
+        let seconds = total_seconds % 60;
+        let minutes_str = match minutes < 10 {
+            true => "0".to_owned() + &minutes.to_string(),
+            false => minutes.to_string(),
+        };
+
+        let seconds_str = match seconds < 10 {
+            true => "0".to_owned() + &seconds.to_string(),
+            false => seconds.to_string(),
+        };
+        minutes_str + ":" + &seconds_str
     }
 }
 
