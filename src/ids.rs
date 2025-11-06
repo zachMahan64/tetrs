@@ -1,5 +1,4 @@
 pub const ACTION: &str = "action";
-pub const PADDED: &str = "padded";
 pub const HIGH_SCORE: &str = "highscore";
 pub const SCORE: &str = "score";
 pub const LEVEL: &str = "level";
@@ -21,3 +20,9 @@ pub const HIDE_IN_4: &str = "h4";
 
 // stats
 pub const ELAPSED: &str = "elapsed";
+
+pub const SINGLES: &str = "singles";
+pub const DOUBLES: &str = "doubles";
+pub const TRIPLES: &str = "triples";
+pub const TETRSES: &str = "tetrses";
+pub const TETRS_RATE: &str = "tetrsrate";

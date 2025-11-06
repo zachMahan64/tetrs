@@ -54,6 +54,24 @@ impl ScaleMode {
     }
 }
 
+struct ClearedLineCounts {
+    singles: u32,
+    doubles: u32,
+    triples: u32,
+    tetrses: u32,
+}
+
+impl ClearedLineCounts {
+    fn new() -> Self {
+        Self {
+            singles: 0,
+            doubles: 0,
+            triples: 0,
+            tetrses: 0,
+        }
+    }
+}
+
 pub struct Board {
     // board layout things
     scale_mode: ScaleMode,
@@ -86,6 +104,7 @@ pub struct Board {
 
     // advanced/extra stats,
     start_time: time::Instant, // for getting elapsed later
+    cleared_line_counts: ClearedLineCounts,
 }
 
 #[derive(Clone, Copy)]
@@ -134,6 +153,7 @@ impl Board {
             synced: false,
             // advanced stats
             start_time: Instant::now(), // needs to be reset when synced
+            cleared_line_counts: ClearedLineCounts::new(),
         };
         board.update_tick_time();
         board
@@ -358,6 +378,13 @@ impl Board {
         }
         self.award_points_from_lines_cleared(num_cleared);
         self.lines += num_cleared as u32;
+        match num_cleared {
+            1 => self.cleared_line_counts.singles += 1,
+            2 => self.cleared_line_counts.doubles += 1,
+            3 => self.cleared_line_counts.triples += 1,
+            4 => self.cleared_line_counts.tetrses += 1,
+            _ => {} // nothing, not possible
+        }
     }
     // helper for clear_any_full_lines
     fn clear_line_and_shift_down(&mut self, row: usize) {
@@ -395,6 +422,15 @@ impl Board {
         let piece_in_4 = self.piece_bag.get(3);
 
         let held_piece = self.held_piece;
+
+        // specific line cleared counts
+
+        let singles = self.cleared_line_counts.singles;
+        let doubles = self.cleared_line_counts.doubles;
+        let triples = self.cleared_line_counts.triples;
+        let tetrses = self.cleared_line_counts.tetrses;
+
+        let tetrs_rate = self.get_tetrs_rate();
 
         match loss_state {
             LossState::NotLost => {}
@@ -447,6 +483,27 @@ impl Board {
                     );
                 }
             }
+
+            // update line cleared counts for singles, doubles, etc.
+            s.call_on_name(ids::SINGLES, |t: &mut TextView| {
+                t.set_content(singles.to_string());
+            });
+
+            s.call_on_name(ids::DOUBLES, |t: &mut TextView| {
+                t.set_content(doubles.to_string());
+            });
+
+            s.call_on_name(ids::TRIPLES, |t: &mut TextView| {
+                t.set_content(triples.to_string());
+            });
+
+            s.call_on_name(ids::TETRSES, |t: &mut TextView| {
+                t.set_content(tetrses.to_string());
+            });
+
+            s.call_on_name(ids::TETRS_RATE, |t: &mut TextView| {
+                t.set_content(tetrs_rate.to_string() + "%");
+            });
 
             // next pieces
             s.call_on_name(ids::NEXT_PIECE, |n: &mut PieceView| {
@@ -689,6 +746,18 @@ impl Board {
             false => seconds.to_string(),
         };
         minutes_str + ":" + &seconds_str
+    }
+
+    // gets the current rate of tetrses out of total kinds of line clears as a percentage
+    fn get_tetrs_rate(&self) -> u32 {
+        let tot = self.cleared_line_counts.singles
+            + self.cleared_line_counts.doubles
+            + self.cleared_line_counts.triples
+            + self.cleared_line_counts.tetrses;
+        if tot == 0 {
+            return 0;
+        }
+        100 * self.cleared_line_counts.tetrses / tot
     }
 }
 

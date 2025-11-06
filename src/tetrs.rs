@@ -87,7 +87,7 @@ pub fn show_title_menu(s: &mut Cursive) {
                 .child(buttons)
                 .child(starting_score_container),
         )
-        .title("Tetrs / Rust Edition | By Zach Mahan"),
+        .title("Tetrs | Rust Edition"),
     )
     .on_event(Event::Key(Key::Esc), |s| {
         s.quit();
@@ -149,10 +149,59 @@ fn play(siv: &mut Cursive) {
     .title_position(cursive::align::HAlign::Center);
 
     let elapsed_view = LinearLayout::horizontal()
-        .child(TextView::new("Elapsed: "))
-        .child(TextView::new("00:00").with_name(ids::ELAPSED));
+        .child(TextView::new("Elapsed: ").style(Effect::Underline))
+        .child(
+            TextView::new("00:00")
+                .style(Effect::Underline)
+                .with_name(ids::ELAPSED),
+        );
+    let singles_view = LinearLayout::horizontal()
+        .child(TextView::new("Singles: ").style(Effect::Underline))
+        .child(
+            TextView::new("0")
+                .style(Effect::Underline)
+                .with_name(ids::SINGLES),
+        );
+    let doubles_view = LinearLayout::horizontal()
+        .child(TextView::new("Doubles: ").style(Effect::Underline))
+        .child(
+            TextView::new("0")
+                .style(Effect::Underline)
+                .with_name(ids::DOUBLES),
+        );
+    let triples_view = LinearLayout::horizontal()
+        .child(TextView::new("Triples: ").style(Effect::Underline))
+        .child(
+            TextView::new("0")
+                .style(Effect::Underline)
+                .with_name(ids::TRIPLES),
+        );
+    let tetrses_view = LinearLayout::horizontal()
+        .child(TextView::new("Tetrses: ").style(Effect::Underline))
+        .child(
+            TextView::new("0")
+                .style(Effect::Underline)
+                .with_name(ids::TETRSES),
+        );
 
-    let stats_view = Dialog::around(LinearLayout::vertical().child(elapsed_view)).title("Stats");
+    let tetrs_rate_view = LinearLayout::horizontal()
+        .child(TextView::new("Tetrs Rate: ").style(Effect::Underline))
+        .child(
+            TextView::new("0%")
+                .style(Effect::Underline)
+                .with_name(ids::TETRS_RATE),
+        );
+
+    let stats_view = Dialog::around(
+        LinearLayout::vertical()
+            .child(elapsed_view)
+            .child(singles_view)
+            .child(doubles_view)
+            .child(triples_view)
+            .child(tetrses_view)
+            .child(tetrs_rate_view),
+    )
+    .title("Stats");
 
     let left_stack = Dialog::around(
         LinearLayout::vertical()
