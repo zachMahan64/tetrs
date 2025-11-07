@@ -1,3 +1,4 @@
+// ids for cursive callbacks on views
 pub const ACTION: &str = "action";
 pub const HIGH_SCORE: &str = "highscore";
 pub const SCORE: &str = "score";
@@ -6,7 +7,8 @@ pub const LINES: &str = "lines";
 pub const STARTING_LEVEL: &str = "slevel";
 pub const STARTING_LEVEL_PREVIEW: &str = "slevelp";
 pub const BOARD: &str = "board";
-pub const GHOST_PIECE: &str = "ghostpiece";
+pub const GHOST_PIECE_ON_OFF: &str = "ghostpiece";
+pub const AUDIO_ON_OFF: &str = "audioset";
 pub const HELD_PIECE: &str = "heldpiece";
 // next pieces
 pub const NEXT_PIECE: &str = "npiece";

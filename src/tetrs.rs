@@ -20,7 +20,6 @@ use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout};
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::{AtomicU8, AtomicU32, Ordering};
-use std::thread;
 
 // static atomic state (needed for referncing in cursive callbacks)
 static LEVEL: AtomicU8 = AtomicU8::new(1);
@@ -59,10 +58,8 @@ pub fn run() {
     set_high_score(get_high_score_from_disk());
     // init title menu
     show_title_menu(&mut siv);
-    // play music on seperate thread, TODO: flesh this out (toggleable, use fast track too)
-    thread::spawn(|| {
-        let _ = audio::play_wav_from_assets(audio::THEME_FAST, true);
-    });
+    // play music on seperate audio thread
+    let _ = audio::play(audio::THEME_FAST, true);
     // init cursive
     const FPS: u32 = 60;
     siv.set_fps(FPS);
@@ -309,6 +306,13 @@ fn get_ghost_piece_string() -> String {
     }
 }
 
+fn get_audio_on_off_string() -> String {
+    match !audio::get_is_paused() {
+        true => "         On".to_string(),
+        false => "        Off".to_string(),
+    }
+}
+
 pub fn get_settings_button() -> Button {
     Button::new("Settings", move |s| {
         let starting_level_button = Button::new("Change Starting Level", |s| {
@@ -363,6 +367,10 @@ pub fn get_settings_button() -> Button {
             // toggle
             set_ghost_piece_on(!get_ghost_piece_on());
         });
+        let toggle_audio_button = Button::new("Toggle Music", |_s| {
+            // toggle
+            let _ = audio::toggle();
+        });
         s.add_layer(
             OnEventView::new(
                 Dialog::around(
@@ -378,12 +386,15 @@ pub fn get_settings_button() -> Button {
                                     .with_name(ids::STARTING_LEVEL_PREVIEW),
                                 ),
                         )
+                        .child(LinearLayout::horizontal().child(toggle_audio_button).child(
+                            TextView::new(get_audio_on_off_string()).with_name(ids::AUDIO_ON_OFF),
+                        ))
                         .child(
                             LinearLayout::horizontal()
                                 .child(toggle_ghost_piece_button)
                                 .child(
                                     TextView::new(get_ghost_piece_string())
-                                        .with_name(ids::GHOST_PIECE),
+                                        .with_name(ids::GHOST_PIECE_ON_OFF),
                                 ),
                         ),
                 )
@@ -394,8 +405,11 @@ pub fn get_settings_button() -> Button {
                 s.call_on_name(ids::STARTING_LEVEL_PREVIEW, |t: &mut TextView| {
                     t.set_content(String::from(" ") + &get_starting_level().to_string());
                 });
-                s.call_on_name(ids::GHOST_PIECE, |t: &mut TextView| {
+                s.call_on_name(ids::GHOST_PIECE_ON_OFF, |t: &mut TextView| {
                     t.set_content(get_ghost_piece_string());
+                });
+                s.call_on_name(ids::AUDIO_ON_OFF, |t: &mut TextView| {
+                    t.set_content(get_audio_on_off_string());
                 });
             })
             .on_event(Event::Key(Key::Esc), |s| {
