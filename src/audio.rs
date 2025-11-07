@@ -18,8 +18,9 @@ fn get_waveform(name: &str) -> Option<&'static [u8]> {
     ASSETS.get_file(name).map(|f| f.contents())
 }
 
-pub const THEME_NORMAL: &str = "tetrs_theme_normal.wav";
 pub const THEME_FAST: &str = "tetrs_theme_fast.wav";
+#[allow(dead_code)]
+pub const THEME_NORMAL: &str = "tetrs_theme_normal.wav";
 
 // commands sent to the audio thread.
 pub enum AudioCommand {
@@ -41,12 +42,11 @@ pub fn get_is_paused() -> bool {
 }
 
 // initialize the audio thread, subsequent calls return the same sender
-// uses producer/consumer
 pub fn init_audio_thread() -> mpsc::Sender<AudioCommand> {
     if let Some(s) = AUDIO_SENDER.get() {
         return s.clone();
     }
-
+    // sender / reciever channel (multiple senders)
     let (tx, rx) = mpsc::channel::<AudioCommand>();
 
     // spawn audio thread that owns OutputStream and Sinks (not Sync, so must be owned here).
@@ -54,8 +54,9 @@ pub fn init_audio_thread() -> mpsc::Sender<AudioCommand> {
         // open stream here and keep it alive for the thread lifetime
         let stream = match OutputStreamBuilder::open_default_stream() {
             Ok(s) => s,
-            Err(e) => {
-                eprintln!("audio: failed to open default stream: {}", e);
+            Err(_e) => {
+                //fail
+                // log when debugging
                 return;
             }
         };
@@ -90,14 +91,10 @@ pub fn init_audio_thread() -> mpsc::Sender<AudioCommand> {
                                     sink.play();
                                     current_sink = Some(sink);
                                 }
-                                Err(e) => {
-                                    eprintln!("audio: failed to decode '{}': {}", name, e);
-                                }
+                                Err(_e) => {}
                             }
                         }
-                        None => {
-                            eprintln!("audio: asset not found '{}'", name);
-                        }
+                        None => {}
                     }
                 }
 
@@ -165,23 +162,26 @@ pub fn play(name: &str, loop_forever: bool) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+pub fn toggle() -> Result<(), Box<dyn Error>> {
+    let tx = init_audio_thread();
+    tx.send(AudioCommand::TogglePause)?;
+    Ok(())
+}
+
+#[allow(dead_code)]
 pub fn pause() -> Result<(), Box<dyn Error>> {
     let tx = init_audio_thread();
     tx.send(AudioCommand::Pause)?;
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn resume() -> Result<(), Box<dyn Error>> {
     let tx = init_audio_thread();
     tx.send(AudioCommand::Resume)?;
     Ok(())
 }
 
-pub fn toggle() -> Result<(), Box<dyn Error>> {
-    let tx = init_audio_thread();
-    tx.send(AudioCommand::TogglePause)?;
-    Ok(())
-}
 /*
 pub fn stop() -> Result<(), Box<dyn Error>> {
     let tx = init_audio_thread();
