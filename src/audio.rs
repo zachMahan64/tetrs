@@ -13,7 +13,7 @@ fn get_waveform(name: &str) -> Option<&'static [u8]> {
 pub fn play_wav_from_assets(name: &str, loop_forever: bool) -> Result<(), Box<dyn Error>> {
     let bytes = get_waveform(name).ok_or("Waveform not found")?;
     let cursor = Cursor::new(bytes);
-    let decoder = Decoder::try_from(cursor)?; // new API uses try_from instead of new()
+    let decoder = Decoder::try_from(cursor)?;
 
     let stream_handle = OutputStreamBuilder::open_default_stream()?;
     let sink = Sink::connect_new(stream_handle.mixer());

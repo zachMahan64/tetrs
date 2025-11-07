@@ -1,5 +1,4 @@
 use crate::audio;
-use crate::audio::THEME_NORMAL;
 use crate::board::Board;
 use crate::board::BoardSettings;
 use crate::ids;
@@ -62,7 +61,7 @@ pub fn run() {
     show_title_menu(&mut siv);
     // play music on seperate thread, TODO: flesh this out (toggleable, use fast track too)
     thread::spawn(|| {
-        let _ = audio::play_wav_from_assets(THEME_NORMAL, true);
+        let _ = audio::play_wav_from_assets(audio::THEME_FAST, true);
     });
     // init cursive
     const FPS: u32 = 60;
