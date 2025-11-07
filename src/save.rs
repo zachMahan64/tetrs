@@ -1,5 +1,5 @@
 use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::{env, fs};
 
 #[cfg(target_os = "windows")]
@@ -10,15 +10,6 @@ fn home_dir() -> Option<PathBuf> {
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 fn home_dir() -> Option<PathBuf> {
     env::var("HOME").ok().map(PathBuf::from)
-}
-fn write_to_file(path: &Path, content: &str) -> io::Result<()> {
-    let mut file = fs::File::create(path)?; // overwrites if exists
-    file.write_all(content.as_bytes())?;
-    Ok(())
-}
-
-fn read_from_file(path: &Path) -> io::Result<String> {
-    fs::read_to_string(path)
 }
 
 const CONFIG_FILENAME: &str = ".tetrs";
