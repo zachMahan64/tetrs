@@ -2,8 +2,9 @@
 name = "tetrs"
 version = "0.1.0"
 edition = "2024"
-
+include = ["src/**", "assets/**", "Cargo.toml"]
 [dependencies]
 cursive = "0.21"
 rand = "0.9.2"
 rodio = "0.21.1"
+include_dir = "0.7"

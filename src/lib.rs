@@ -1,5 +1,6 @@
 #[macro_use]
 pub mod log;
+mod audio;
 pub mod board;
 mod ids;
 pub mod piece;

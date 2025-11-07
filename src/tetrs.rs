@@ -1,3 +1,5 @@
+use crate::audio;
+use crate::audio::THEME_NORMAL;
 use crate::board::Board;
 use crate::board::BoardSettings;
 use crate::ids;
@@ -19,6 +21,7 @@ use cursive::views::TextView;
 use cursive::views::{Button, Dialog, LinearLayout};
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::{AtomicU8, AtomicU32, Ordering};
+use std::thread;
 
 // static atomic state (needed for referncing in cursive callbacks)
 static LEVEL: AtomicU8 = AtomicU8::new(1);
@@ -55,13 +58,17 @@ pub fn run() {
 
     // fetch high score from disk
     set_high_score(get_high_score_from_disk());
-
-    // enter title menu
+    // init title menu
     show_title_menu(&mut siv);
+    // play music on seperate thread, TODO: flesh this out (toggleable, use fast track too)
+    thread::spawn(|| {
+        let _ = audio::play_wav_from_assets(THEME_NORMAL, true);
+    });
     // init cursive
     const FPS: u32 = 60;
     siv.set_fps(FPS);
     siv.run();
+    // save highscore on program close
     save_high_score_to_disk(get_high_score());
 }
 
