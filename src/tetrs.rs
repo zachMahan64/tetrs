@@ -2,6 +2,7 @@ use crate::board::Board;
 use crate::board::BoardSettings;
 use crate::ids;
 use crate::piece::PieceView;
+use crate::save;
 use crate::text_art;
 use cursive::Cursive;
 use cursive::CursiveRunnable;
@@ -51,12 +52,17 @@ pub fn run() {
     let mut theme = siv.current_theme().clone();
     theme.palette = cursive::theme::Palette::retro();
     siv.set_theme(theme);
+
+    // fetch high score from disk
+    set_high_score(get_high_score_from_disk());
+
     // enter title menu
     show_title_menu(&mut siv);
     // init cursive
     const FPS: u32 = 60;
     siv.set_fps(FPS);
     siv.run();
+    save_high_score_to_disk(get_high_score());
 }
 
 pub fn show_title_menu(s: &mut Cursive) {
@@ -391,4 +397,17 @@ pub fn get_settings_button() -> Button {
             }),
         );
     })
+}
+//helpers
+fn get_high_score_from_disk() -> u32 {
+    match save::read_config() {
+        Ok(hs_str) => match hs_str.parse::<u32>() {
+            Ok(x) => x,
+            Err(_) => 0,
+        },
+        Err(_) => 0,
+    }
+}
+fn save_high_score_to_disk(score: u32) {
+    let _ = save::write_config(&score.to_string());
 }
