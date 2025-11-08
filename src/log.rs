@@ -10,6 +10,7 @@ macro_rules! log_err {
 use std::fs::OpenOptions;
 use std::io::Write;
 
+#[allow(dead_code)]
 fn log_to_file(msg: &str) {
     let mut file = OpenOptions::new()
         .create(true)
