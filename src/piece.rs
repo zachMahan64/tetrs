@@ -338,7 +338,7 @@ impl PieceView {
     pub fn set_piece_optional(&mut self, opt_piece: Option<Piece>) {
         match opt_piece {
             Some(p) => self.set_piece(p),
-            None => {}
+            None => self.piece = None,
         }
     }
     fn get_scale(&self) -> usize {

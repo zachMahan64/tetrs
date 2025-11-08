@@ -193,13 +193,10 @@ fn play(siv: &mut Cursive) {
                 .with_name(ids::TETRSES),
         );
 
-    let tetrs_rate_view = LinearLayout::horizontal()
-        .child(TextView::new("Tetrs Rate: ").style(Effect::Underline))
-        .child(
-            TextView::new("0%")
-                .style(Effect::Underline)
-                .with_name(ids::TETRS_RATE),
-        );
+    let tetrs_rate = TextView::new("0%")
+        .center()
+        .style(Effect::Underline)
+        .with_name(ids::TETRS_RATE);
 
     let stats_view = Dialog::around(
         LinearLayout::vertical()
@@ -207,8 +204,7 @@ fn play(siv: &mut Cursive) {
             .child(singles_view)
             .child(doubles_view)
             .child(triples_view)
-            .child(tetrses_view)
-            .child(tetrs_rate_view),
+            .child(tetrses_view),
     )
     .title("Stats");
 
@@ -216,7 +212,8 @@ fn play(siv: &mut Cursive) {
         LinearLayout::vertical()
             .child(Dialog::around(PieceView::new().with_name(ids::HELD_PIECE)).title("hold [c]"))
             .child(action_bubble)
-            .child(stats_view),
+            .child(stats_view)
+            .child(Dialog::around(tetrs_rate).title("Tetrs Rate")),
     );
 
     let settings = BoardSettings {
