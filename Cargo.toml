@@ -1,10 +1,27 @@
 [package]
-name = "tetrs"
+name = "tetrs-tui"
 version = "0.1.0"
 edition = "2024"
-include = ["src/**", "assets/**", "Cargo.toml"]
+
+# --- for crates.io ---
+description = "A terminal-based Tetris clone built using the Cursive TUI library."
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/zachMahan64/tetrs"
+keywords = ["tetris", "tui", "game", "rust"]
+categories = ["games", "command-line-utilities"]
+
+authors = ["zachMahan64"]
+homepage = "https://github.com/zachMahan64/tetrs"
+
+include = ["src/**", "assets/**", "Cargo.toml", "README.md", "LICENSE"]
+
 [dependencies]
 cursive = "0.21"
 rand = "0.9.2"
 rodio = "0.21.1"
 include_dir = "0.7"
+
+[[bin]]
+name = "tetrs"
+path = "src/main.rs" 

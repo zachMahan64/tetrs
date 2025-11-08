@@ -1,7 +1,6 @@
 ### To-Do list
 #### Core
-- spruce up README
-- add fields to Cargo.toml -> make crates acc -> publish
+- [x] done
 #### Extra
-- VFX (like cool graphic on a tetrs)
-- SFX (like satisfying sounds on line clears/tetrs)
+- [ ] VFX (like cool graphic on a tetrs)
+- [ ] SFX (like sounds on line clears/tetrs)
