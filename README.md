@@ -1,18 +1,33 @@
-![](demos/tetrs_demo.gif)
+![Tetrs Demo](demos/tetrs_demo.gif)
 # Tetrs (tetrs-tui)
+- A modern Tetris clone for your terminal, written in Rust with a responsive TUI and optional soundtrack.
+
 - Runs fully in the terminal.
+- Check out the [crates.io page](https://crates.io/crates/tetrs-tui).
 - Uses the [Cursive TUI library](https://github.com/gyscos/cursive) and [Rodio](https://github.com/RustAudio/rodio) for audio.
 - Music synthesized from MIDI from [bitmidi.com](https://bitmidi.com/).
 
+## Features
+- Playable on Linux, MacOS, and Windows.
+- Beautiful TUI
+- Difficulty scaling
+- Piece holding 
+- Toggleable music
+- Toggleable ghost piece
+- Persistent highscore
+
 ## Install
-```
-$ cargo install tetrs-tui
+```bash
+cargo install tetrs-tui
 ```
 ## Run 
-```
-$ cargo run --package tetrs-tui
+```bash
+cargo run --package tetrs-tui
 ```
 or, if your Cargo binaries are on your path: 
+```bash
+tetrs
 ```
-$ tetrs
-```
+
+## License
+- Distributed under the [MIT License](LICENSE).
