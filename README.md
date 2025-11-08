@@ -10,7 +10,7 @@ $ cargo install tetrs-tui
 ```
 ## Run 
 ```
-$ cargo run -package tetrs-tui
+$ cargo run --package tetrs-tui
 ```
 or, if your Cargo binaries are on your path: 
 ```
