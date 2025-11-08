@@ -1,7 +1,7 @@
 ![](demos/tetrs_demo.gif)
 # Tetrs (tetrs-tui)
 - Runs fully in the terminal.
-- Uses [Cursive TUI library](https://github.com/gyscos/cursive) and [Rodio for audio](https://github.com/RustAudio/rodio).
+- Uses the [Cursive TUI library](https://github.com/gyscos/cursive) and [Rodio](https://github.com/RustAudio/rodio) for audio.
 - Music synthesized from MIDI from [bitmidi.com](https://bitmidi.com/).
 
 ## Install
