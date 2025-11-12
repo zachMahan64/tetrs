@@ -15,6 +15,19 @@
 - Persistent highscore
 
 ## Install
+Installing ALSA dev packages for (only needed for Linux):
+```bash
+# Ubuntu & Debian
+sudo apt update
+sudo apt install libasound2-dev pkg-config
+
+# Fedora
+sudo dnf install alsa-lib-devel pkgconf-pkg-config
+
+# Arch
+sudo pacman -S alsa-lib pkgconf
+```
+Installing Tetrs:
 ```bash
 cargo install tetrs-tui
 ```
