@@ -15,6 +15,7 @@
 - Persistent highscore
 
 ## Install
+Before getting started, make sure you have [Rust and Cargo installed](https://doc.rust-lang.org/cargo/getting-started/installation.html).
 Installing ALSA dev packages for (only needed for Linux):
 ```bash
 # Ubuntu & Debian
