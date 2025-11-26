@@ -33,13 +33,12 @@ Installing Tetrs:
 cargo install tetrs-tui
 ```
 ## Run
-```
+```bash
+# if your Cargo binaries are on your path: 
+tetrs
+# otherwise:
+cd ~
 ./.cargo/bin/tetrs
 ```
-If your Cargo binaries are on your path: 
-```bash
-tetrs
-```
-
 ## License
 - Distributed under the [MIT License](LICENSE).
