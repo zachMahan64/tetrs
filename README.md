@@ -32,11 +32,11 @@ Installing Tetrs:
 ```bash
 cargo install tetrs-tui
 ```
-## Run 
-```bash
-cargo run --package tetrs-tui
+## Run
 ```
-or, if your Cargo binaries are on your path: 
+./.cargo/bin/tetrs
+```
+If your Cargo binaries are on your path: 
 ```bash
 tetrs
 ```
